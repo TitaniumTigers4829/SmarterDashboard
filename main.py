@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
     #   self.setupUi(self)
        self.setWindowTitle("Smarter Dashboard")
        self.setWindowIcon(QIcon("GUI/4829logo.png"))
-       self.field_image = QPixmap(cv2.imread("GUI/rapid-react-field-red.png"))
+       self.field_image = QPixmap(cv2.imread("GUI/rapid-react-field-red.png")) # for blue alliance, use "GUI/rapid-react-field-blue.png"
  
        layout = QGridLayout()
  
