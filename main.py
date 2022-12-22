@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()  # *args, **kwargs)
-        #   self.setupUi(self)
+        #  
         self.setWindowTitle("Smarter Dashboard")
         self.setWindowIcon(QIcon("GUI/4829logo.png"))
 
@@ -41,9 +41,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(Color('white'), 0, 4)
         # second row
 
-        # display the playingfield map on the screen
-        self.field_image = QPixmap(
-            cv2.imread("GUI/rapid-react-field-red.png"))  # for blue alliance, use "GUI/rapid-react-field-blue.png"
+        # display the playing field map on the screen
+        self.field_image = QPixmap(cv2.imread("GUI/rapid-react-field-red.png"))  # for blue alliance, use "GUI/rapid-react-field-blue.png"
         playingfieldmap = QLabel()
         pixmap = self.convert_cv_qt(self.field_image)
         playingfieldmap.setPixmap(pixmap)
