@@ -7,7 +7,7 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setMinimumSize(800, 600)
+        MainWindow.setMinimumSize(1200, 600)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.layoutWidget = QtWidgets.QWidget(self.centralwidget)
@@ -25,9 +25,9 @@ class Ui_MainWindow(object):
         self.hBoxLayout.addLayout(self.gridLayout)
 
         self.progressBar = QtWidgets.QProgressBar(self.layoutWidget)
-        self.progressBar.setProperty("value", 24)
+        self.progressBar.setProperty("value", 99)
         self.progressBar.setObjectName("progressBar")
-        self.gridLayout.addWidget(self.progressBar, 1, 13, 1, 5)
+        self.gridLayout.addWidget(self.progressBar, 1, 13, 1, 50)
         spacerItem = QtWidgets.QSpacerItem(20, 418, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.gridLayout.addItem(spacerItem, 0, 6, 6, 1)
         self.comboBox = QtWidgets.QComboBox(self.layoutWidget)
