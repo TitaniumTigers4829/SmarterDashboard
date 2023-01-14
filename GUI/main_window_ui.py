@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.gridLayout.setObjectName("gridLayout")
-
+  
         self.playingfield = QtWidgets.QLabel(self.layoutWidget)
         self.playingfield.setObjectName("label")
         self.hBoxLayout.addWidget(self.playingfield)
