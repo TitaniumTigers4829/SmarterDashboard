@@ -32,7 +32,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addItem(spacerItem, 0, 6, 6, 1)
         self.comboBox = QtWidgets.QComboBox(self.layoutWidget)
         self.comboBox.setObjectName("comboBox")
-        self.comboBox.addItems(["This", "is", "a", "test"])
+        self.comboBox.addItems(["This", "is", "a", "sendable", "chooser"])
         self.gridLayout.addWidget(self.comboBox, 1, 1, 1, 5)
         self.label_1 = QtWidgets.QLabel(self.layoutWidget)
         self.label_1.setStyleSheet("")
