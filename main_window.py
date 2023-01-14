@@ -24,7 +24,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowTitle("Smarter Dashboard")
         self.setWindowIcon(QtGui.QIcon("GUI/4829logo.png"))
         self.setFocus()
-        self.field_image = cv2.imread("GUI/rapid-react-field-red.png")
+        self.field_image = cv2.imread("GUI/charged-up-field-red.png")
         self.label_2.setPixmap(self.convert_cv_qt(self.field_image))
 
     def establish_network_table_connection(self):
