@@ -7,22 +7,21 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setMinimumSize(1200, 600)
+        MainWindow.setMinimumSize(800, 400)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.layoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.layoutWidget.setGeometry(QtCore.QRect(30, 0, 1200, 700))
+        self.layoutWidget.setGeometry(QtCore.QRect(20, 0, 1200, 700))
         self.layoutWidget.setObjectName("layoutWidget")
-        self.hBoxLayout = QtWidgets.QHBoxLayout(self.layoutWidget)
+        self.metaGridLayout = QtWidgets.QGridLayout(self.layoutWidget)
         self.gridLayout = QtWidgets.QGridLayout()
-        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout.setContentsMargins(20, 20, 20, 20)
         self.gridLayout.setObjectName("gridLayout")
-  
-        self.playingfield = QtWidgets.QLabel(self.layoutWidget)
+        self.playingfield = QtWidgets.QLabel()
         self.playingfield.setObjectName("label")
-        self.hBoxLayout.addWidget(self.playingfield)
+        self.metaGridLayout.addWidget(self.playingfield, 0, 0, 2, 24)
         
-        self.hBoxLayout.addLayout(self.gridLayout)
+        self.metaGridLayout.addLayout(self.gridLayout, 0, 11, 8, 6)
 
         self.progressBar = QtWidgets.QProgressBar(self.layoutWidget)
         self.progressBar.setProperty("value", 99)
@@ -240,4 +239,4 @@ class Ui_MainWindow(object):
         self.label_18.setText(_translate("MainWindow", "TextLabel"))
         self.label_17.setText(_translate("MainWindow", "TextLabel"))
         self.label_19.setText(_translate("MainWindow", "TextLabel"))
-        self.label_20.setText(_translate("MainWindow", "TextLabel"))
+        self.label_20.setText(_translate("MainWindow", "TextLabel")) 

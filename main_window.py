@@ -7,7 +7,7 @@ from PyQt6.QtGui import QPixmap
 
 
 from GUI.main_window_ui import *
-from save_send_network_tables import *
+#from save_send_network_tables import *
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):

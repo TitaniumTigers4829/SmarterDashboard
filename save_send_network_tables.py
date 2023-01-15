@@ -1,6 +1,6 @@
 from time import sleep
 
-from _pynetworktables import *
+# from pynetworktables import *
 
 # Constants for the names of network table entries
 RECEIVE_LEFT_NAME = "leftClimbHookHeight"
