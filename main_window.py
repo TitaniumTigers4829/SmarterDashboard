@@ -4,18 +4,18 @@ import logging
 import cv2
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
-
-
+from scoretracker import ScoreTracker
 from GUI.main_window_ui import *
 #from save_send_network_tables import *
 
 
-class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+class MainWindow(QtWidgets.QMainWindow, ScoreTracker):
 
 
     def __init__(self, *args, obj=None, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        self.scoreTracker()
         self.setWindowTitle("Smarter Dashboard")
         self.setWindowIcon(QtGui.QIcon("GUI/4829logo.png"))
         self.setFocus()
