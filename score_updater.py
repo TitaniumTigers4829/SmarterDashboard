@@ -1,7 +1,7 @@
 from time import sleep
 from score_tracker import *
 
-from pynetworktables import *
+from networktables import NetworkTablesInstance
 
 # Constants for the names of network table entries
 HAS_UPPERTERMINAL1_SCORED = ""
@@ -33,12 +33,6 @@ HAS_LOWERTERMINAL8_SCORED = ""
 HAS_LOWERTERMINAL9_SCORED = ""
 
 
-RECEIVE_LEFT_NAME = "leftClimbHookHeight"
-RECEIVE_RIGHT_NAME = "rightClimbHookHeight"
-SEND_LEFT_NAME = "leftClimbHookZero"
-SEND_RIGHT_NAME = "rightClimbHookZero"
-SEND_CONFIRMATION_NAME = "leftZeroReceivedSuccessfully"
-
 
 def scoreUpdater(nt: NetworkTable):
     """
@@ -46,6 +40,10 @@ def scoreUpdater(nt: NetworkTable):
     :param nt: The network table created from the .getTable method.
     :return:
     """
+    ntinst = NetworkTablesInstance.getDefault()
+    ntinst.startClientTeam(4829)
+    ntinst.startDSClient()
+    
     values_received = False
     while not values_received:
         # Gets the climb zeroes from the network table
@@ -79,13 +77,13 @@ def scoreUpdater(nt: NetworkTable):
         upperTerminal9 = nt.getBoolean(HAS_UPPERTERMINAL9_SCORED, False)
 
         for i in range(1,10):
-            if ['upperTerminal' + str(i)] != False:
+            if 'upperTerminal' + str(i) != False:
                 ScoreTracker.peiceScored('upperTerminal' + str(i))
 
         for i in range(1,10):
-            if ['middleTerminal' + str(i)] != False:
+            if 'middleTerminal' + str(i) != False:
                 ScoreTracker.peiceScored('middleTerminal' + str(i))
 
         for i in range(1,10):
-            if ['lowerTerminal' + str(i)] != False:
+            if 'lowerTerminal' + str(i) != False:
                 ScoreTracker.peiceScored('lowerTerminal' + str(i))
