@@ -12,4 +12,3 @@ class ScoreTracker(Ui_MainWindow):
     def peiceScored(self, terminalID):
         self.terminalID.setStyleSheet("background-color: green")
 
-    def liveUpdate(self, )
