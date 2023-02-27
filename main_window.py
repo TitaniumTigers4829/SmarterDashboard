@@ -15,13 +15,13 @@ class MainWindow(QtWidgets.QMainWindow, ScoreTracker):
     def __init__(self, *args, obj=None, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        self.scoreTracker()
+       # self.scoreTracker()
         self.setWindowTitle("Smarter Dashboard")
         self.setWindowIcon(QtGui.QIcon("GUI/4829logo.png"))
         self.setFocus()
         self.field_image = cv2.imread("GUI/charged-up-field-red.png")
         self.playingfield.setPixmap(self.convert_cv_qt(self.field_image))
-        self.scoreUpdater()
+       # self.scoreUpdater()
 
     def convert_cv_qt(self, cv_img) -> QPixmap:
         """Convert from an opencv image to QPixmap"""

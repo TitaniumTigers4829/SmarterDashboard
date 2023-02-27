@@ -34,7 +34,7 @@ HAS_LOWERTERMINAL9_SCORED = ""
 
 
 
-def scoreUpdater(nt: NetworkTable):
+def scoreUpdater(nt: NetworkTablesInstance):
     """
     Handles receiving the climb zeroes from the robot.
     :param nt: The network table created from the .getTable method.
