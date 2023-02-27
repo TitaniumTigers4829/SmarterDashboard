@@ -4,7 +4,6 @@ from PyQt6.QtWidgets import QApplication
 
 from main_window import MainWindow
 
-#changes
 def main():
     app = QApplication(sys.argv)
 
