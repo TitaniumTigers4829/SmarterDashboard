@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from scoretracker import ScoreTracker
 from GUI.main_window_ui import *
-#from save_send_network_tables import *
+from score_updater import *
 
 
 class MainWindow(QtWidgets.QMainWindow, ScoreTracker):
@@ -21,7 +21,7 @@ class MainWindow(QtWidgets.QMainWindow, ScoreTracker):
         self.setFocus()
         self.field_image = cv2.imread("GUI/charged-up-field-red.png")
         self.playingfield.setPixmap(self.convert_cv_qt(self.field_image))
-
+        self.scoreUpdater()
 
     def convert_cv_qt(self, cv_img) -> QPixmap:
         """Convert from an opencv image to QPixmap"""
