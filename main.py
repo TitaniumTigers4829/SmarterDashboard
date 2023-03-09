@@ -1,5 +1,8 @@
+from networktables import NetworkTables
 import dearpygui.dearpygui as dpg
 import numpy as np
+import threading
+import logging
 import time
 
 # Initialization
@@ -15,6 +18,8 @@ open_widgets = {
     "orientation": None,
     "auto_selector": None,
 }
+# Global variable to see if it's connected
+connection_status = False
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -43,8 +48,8 @@ def make_grid_view():
     global open_widgets
     if open_widgets["grid_view"] is not None:
         dpg.delete_item(open_widgets["grid_view"])
-        dpg.delete_item(item="grid_view_drawlist")
-        dpg.delete_item(item="grid_view_resize_handler")
+        dpg.delete_item(item="grid_drawlist")
+        dpg.delete_item(item="grid_resize_handler")
 
     with dpg.window(label="Grid View", tag="grid_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=300, height=400) as grid_view:
         # Attach grid_view to the global widgets
@@ -149,7 +154,6 @@ def make_grid_view():
         dpg.add_item_resize_handler(callback=drawlist_resize)
 
     dpg.bind_item_handler_registry("grid_view", "grid_resize_handler")
-
 
 # Makes the auto selector window
 def make_auto_selector():
@@ -402,30 +406,9 @@ def make_field_view():
 
     dpg.bind_item_handler_registry("field_view", "field_resize_handler")
 
-# Create the menu bar
-with dpg.viewport_menu_bar(label="Menu", tag="menu"):
-    with dpg.menu(label="Settings"):
-        dpg.add_menu_item(label="Enable Something")
-    with dpg.menu(label="Widgets"):
-        dpg.add_menu_item(label="Field View", callback=make_field_view)
-        dpg.add_menu_item(label="Grid View", callback=make_grid_view)
-        dpg.add_menu_item(label="Orientation", callback=make_orientation)
-        dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
-    with dpg.menu(label="Override"):
-        dpg.add_text(default_value="Nothing here yet.")
-
-# make_orientation()
-# make_field_view()
-# make_auto_selector()
-make_grid_view()
-
-dpg.setup_dearpygui()
-dpg.show_viewport()
-
-while dpg.is_dearpygui_running():
-    # update code start
-
-
+# Update for whenever the frame is drawn
+def draw_call_update():
+    # Orientation
     if open_widgets["orientation"] is not None:
         view = dpg.create_fps_matrix([0, 20, 10], pitch=(np.pi / 3), yaw=(np.pi))
         proj = dpg.create_perspective_matrix(90.0 * (np.pi / 180.0), 1.0, 0.1, 100)
@@ -440,16 +423,68 @@ while dpg.is_dearpygui_running():
         dpg.apply_transform("grid_3d", proj*view*orientation_3d)
         dpg.apply_transform("axis_3d", proj*view*orientation_3d)
 
+    # Field View
     if open_widgets["field_view"] is not None:
         field_scale = dpg.create_scale_matrix([1, field_aspect])
         test_field_rotation = dpg.create_rotation_matrix((time.time()) % (2 * np.pi), [0, 0, -1])
         test_field_position = dpg.create_translation_matrix([np.cos(time.time()) * 0.1, np.sin(time.time()) * 0.1])
         dpg.apply_transform("field_robot", field_scale*test_field_position*test_field_rotation)
 
-    # update code end
+# Target thread to make some connections
+def connect_table_and_listeners(timeout=5):
+    connected = False
 
-    dpg.render_dearpygui_frame()
+    NetworkTables.addConnectionListener(
+        listener=lambda connected, info: print(f"Connected: {connected}\nInfo: {info}"),
+        immediateNotify=True
+    )
 
-dpg.start_dearpygui()
-dpg.destroy_context()
+    # Some kind of waiting routine
+    start = time.time()
+    while (not connected) and ((time.time() - start) < timeout):
+        pass
 
+    # Add a bunch of these to the right values assuming they exist
+    # NetworkTables.addEntryListener()
+
+def main():
+    # Networktables Setup
+    logging.basicConfig(level=logging.DEBUG)
+    NetworkTables.startClientTeam(4829)
+
+
+    # Create the menu bar
+    with dpg.viewport_menu_bar(label="Menu", tag="menu"):
+        with dpg.menu(label="Settings"):
+            dpg.add_menu_item(label="Enable Something")
+        with dpg.menu(label="Widgets"):
+            dpg.add_menu_item(label="Field View", callback=make_field_view)
+            dpg.add_menu_item(label="Grid View", callback=make_grid_view)
+            dpg.add_menu_item(label="Orientation", callback=make_orientation)
+            dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
+        with dpg.menu(label="Override"):
+            dpg.add_text(default_value="Nothing here yet.")
+        dpg.add_spacer(width=30)
+        dpg.add_text(default_value="Status:", color=(255, 255, 255, 100))
+        dpg.add_text(default_value="Not Connected", color=(255, 0, 0))
+
+    # Make all the windows to start with
+    make_orientation()
+    make_grid_view()
+    make_field_view()
+    make_auto_selector()
+
+    # Setup
+    dpg.setup_dearpygui()
+    dpg.show_viewport()
+
+    # Update loop
+    while dpg.is_dearpygui_running():
+        draw_call_update()
+        dpg.render_dearpygui_frame()
+
+    dpg.start_dearpygui()
+    dpg.destroy_context()
+
+if __name__ == "__main__":
+    main()
