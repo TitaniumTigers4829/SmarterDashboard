@@ -4,7 +4,8 @@ import numpy as np
 import threading
 import logging
 import time
-
+import robotpy
+import wpilib
 # Initialization
 dpg.create_context()
 dpg.configure_app(docking=True, docking_space=True)
@@ -154,6 +155,7 @@ def make_grid_view():
         dpg.add_item_resize_handler(callback=drawlist_resize)
 
     dpg.bind_item_handler_registry("grid_view", "grid_resize_handler")
+    
 
 # Makes the auto selector window
 def make_auto_selector():
@@ -172,8 +174,15 @@ def make_auto_selector():
         dpg.add_combo(tag="auto_selector", items=options, width=-1)
 
     # Attach necessary callbacks
-    dpg.set_item_callback("auto_selector", lambda _: print("Something here about sending the path and showing it on the field view"))
+        dpg.set_item_callback("auto_selector", 
+        lambda item: print(dpg.get_value(item))
 
+
+    )
+# class AutoPaths(paths.paths):
+#     def init(self, drive: Drivetrain, left_axis, right_axis) -> None: 
+
+#     def execute(self)
 # Makes the orientation window
 def make_orientation():
     grid_size = 8
@@ -432,26 +441,42 @@ def draw_call_update():
 
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
-    connected = False
+    
+    def connected_callback():
+        global connection_status
+        connection_status = True
+        dpg.set_value(item="connection_text", value="Connected")
+        dpg.configure_item(item="connection_text", color=(0, 255, 0))
 
     NetworkTables.addConnectionListener(
-        listener=lambda connected, info: print(f"Connected: {connected}\nInfo: {info}"),
+        listener=lambda _, __: connected_callback(),
         immediateNotify=True
     )
 
     # Some kind of waiting routine
-    start = time.time()
-    while (not connected) and ((time.time() - start) < timeout):
-        pass
+    time.sleep(2)
+    if (not connection_status): return
 
     # Add a bunch of these to the right values assuming they exist
-    # NetworkTables.addEntryListener()
+    sd = NetworkTables.getTable("SmartDashboard")
+    sd.addEntryListener(
+        listener=lambda source, key, value, isNew: print(f"New Value: {value}"),
+        immediateNotify=True,
+        key="testing"
+    )
+    class MyRobot (wpilib.RobotBase):
+        def robotInit(self):
+            self.automodes = AutonomousModeSelector('autonomous')
+        def autonomousInit(self):
+            self.automodes.start()
+        def autonomousPeriodic(self):
+            self.automodes.periodeic()
+        def disabledInit(self):
+            self.automodes.disable()
+ 
+
 
 def main():
-    # Networktables Setup
-    logging.basicConfig(level=logging.DEBUG)
-    NetworkTables.startClientTeam(4829)
-
 
     # Create the menu bar
     with dpg.viewport_menu_bar(label="Menu", tag="menu"):
@@ -466,7 +491,13 @@ def main():
             dpg.add_text(default_value="Nothing here yet.")
         dpg.add_spacer(width=30)
         dpg.add_text(default_value="Status:", color=(255, 255, 255, 100))
-        dpg.add_text(default_value="Not Connected", color=(255, 0, 0))
+        dpg.add_text(tag="connection_text", default_value="Not Connected", color=(255, 0, 0))
+
+    # Networktables Setup
+    logging.basicConfig(level=logging.DEBUG)
+    NetworkTables.startClientTeam(4829)
+    connection_thread = threading.Thread(target=connect_table_and_listeners, daemon=True)
+    connection_thread.start()
 
     # Make all the windows to start with
     make_orientation()
