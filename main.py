@@ -1,5 +1,6 @@
 from networktables.util import ChooserControl
 from networktables import NetworkTables
+from networktables import NetworkTablesInstance
 import dearpygui.dearpygui as dpg
 import numpy as np
 import threading
@@ -20,8 +21,6 @@ open_widgets = {
 }
 # Global variable to see if it's connected
 connection_status = False
-# Global table instance
-table_instance = None
 # Global chooser options
 chooser_options = []
 # Current path
@@ -29,7 +28,16 @@ current_path = [
     [9.5, 8, -38.8, 180],
     [5.3, 4.75, 180, 180],
     [2.5, 4.75, 180, 180],
-    [1.5, 4.42, 180, 180]
+    [1.5, 1.42, 180, 180]
+]
+
+alternate_path = [
+    [9.5, 1, -38.8, 180],
+    [5.3, 4.75, 180, 180],
+    [2.5, 8.75, 180, 180],
+    [1.5, 4.42, 180, 180],
+    [1.5, 2.42, 180, 180],
+    [9.5, 5.42, 180, 180],
 ]
 
 # Global robot data
@@ -66,13 +74,36 @@ def path_to_cubic_points(path):
             start[1] + np.sin(np.deg2rad(path[i][3])) * handle_length
         ]
         end_handle = [
-            end[0] - np.cos(np.deg2rad(path[i][3])) * handle_length, 
-            end[1] - np.sin(np.deg2rad(path[i][3])) * handle_length
+            end[0] - np.cos(np.deg2rad(path[i+1][3])) * handle_length, 
+            end[1] - np.sin(np.deg2rad(path[i+1][3])) * handle_length
         ]
 
         points.extend([start, start_handle, end_handle, end])
 
     return points
+
+# God function for networktables callbacks
+def on_networktales_change(source, key, value, isNew):
+    global robot_odometry
+
+    # TODO: Figure out a way to stop it from erroring when closing the program when connected
+
+    match (key):
+        case "pitch":
+            dpg.set_value(item="orientation_pitch_text", value=f"Pitch: {np.round(value, 1)} deg".rjust(18))
+            dpg.set_value(item="orientation_pitch_bar", value=(180 + value)/360)
+            robot_odometry["pitch"] = value
+        case "roll":
+            dpg.set_value(item="orientation_roll_text", value=f"Roll: {np.round(value, 1)} deg".rjust(18))
+            dpg.set_value(item="orientation_roll_bar", value=(180 + value)/360)
+            robot_odometry["roll"] = value
+        case "yaw":
+            dpg.set_value(item="orientation_yaw_text", value=f"Yaw: {np.round(value, 1)} deg".rjust(18))
+            dpg.set_value(item="orientation_yaw_bar", value=(180 + value)/360)
+            robot_odometry["yaw"] = value
+        case "position":
+            robot_odometry["field_x"] = value[0]
+            robot_odometry["field_y"] = value[1]
 
 # Load textures intro registry
 with dpg.texture_registry():
@@ -203,12 +234,10 @@ def make_grid_view():
     
 # Makes the auto selector window
 def make_auto_selector():
-    global open_widgets, chooser_options, table_instance
+    global open_widgets, chooser_options
 
     def auto_selector_callback(item):
-        if table_instance is None: return
-
-        control = ChooserControl("auto_path", inst=table_instance)
+        control = ChooserControl("SendableChooser[0]", inst=NetworkTablesInstance.getDefault())
         control.setSelected(dpg.get_value(item=item))
 
     if open_widgets["auto_selector"] is not None:
@@ -271,13 +300,13 @@ def make_orientation():
 
         # Create Items
         with dpg.group(horizontal=True):
-            dpg.add_text(tag="orientation_pitch_text", default_value=f"Pitch: {robot_odometry['pitch']} deg".rjust(15))
+            dpg.add_text(tag="orientation_pitch_text", default_value=f"Pitch: {robot_odometry['pitch']} deg".rjust(18))
             dpg.add_progress_bar(tag="orientation_pitch_bar", label="Pitch", width=-1, default_value=robot_odometry['pitch']/360)
         with dpg.group(horizontal=True):
-            dpg.add_text(tag="orientation_roll_text", default_value=f"Roll: {robot_odometry['roll']} deg".rjust(15))
+            dpg.add_text(tag="orientation_roll_text", default_value=f"Roll: {robot_odometry['roll']} deg".rjust(18))
             dpg.add_progress_bar(tag="orientation_roll_bar", label="Roll", width=-1, default_value=robot_odometry['roll']/360)
         with dpg.group(horizontal=True):
-            dpg.add_text(tag="orientation_yaw_text", default_value=f"Yaw: {robot_odometry['yaw']} deg".rjust(15))
+            dpg.add_text(tag="orientation_yaw_text", default_value=f"Yaw: {robot_odometry['yaw']} deg".rjust(18))
             dpg.add_progress_bar(tag="orientation_yaw_bar", label="Yaw", width=-1, default_value=robot_odometry['yaw']/360)
 
         with dpg.drawlist(width=100, height=100, tag="orientation_drawlist"):
@@ -349,6 +378,45 @@ def make_orientation():
 
         dpg.bind_item_handler_registry("orientation", "orientation_resize_handler")
 
+# Draws the path and all such points
+def draw_path():
+    dpg.delete_item(item="robot_path")
+    dpg.delete_item(item="robot_handles")
+    dpg.delete_item(item="robot_points")
+
+    with dpg.draw_node(tag="robot_path", parent="field_robot_pass"):
+        bezier_points = path_to_cubic_points(current_path)
+        
+        for i in range(int(len(bezier_points) / 4)):
+            # dpg.draw_circle(center=bezier_points[i], radius=3, thickness=2)
+            dpg.draw_bezier_cubic(
+                p1=bezier_points[(i*4) + 0],
+                p2=bezier_points[(i*4) + 1],
+                p3=bezier_points[(i*4) + 2],
+                p4=bezier_points[(i*4) + 3],
+                thickness=5,
+                color=(155, 155, 255, 200)
+            )
+
+    with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=True):
+        bezier_points = path_to_cubic_points(current_path)
+        
+        for i in range(int(len(bezier_points) / 4)):
+            dpg.draw_circle(center=bezier_points[(i*4) + 1], radius=3, thickness=2)
+            dpg.draw_circle(center=bezier_points[(i*4) + 2], radius=3, thickness=2)
+            dpg.draw_line(p1=bezier_points[(i*4)], p2=bezier_points[(i*4) + 1])
+            dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
+
+    with dpg.draw_node(tag="robot_points", parent="field_robot_pass"):
+        for node in current_path:
+            dpg.draw_circle(
+                center=field_to_canvas(*node[0:2]), 
+                radius=5, 
+                thickness=4,
+                color=(0, 0, 0),
+                fill=(255, 255, 255)
+            )
+
 # Makes the field layout window
 def make_field_view():
     robot_width = 0.03
@@ -405,41 +473,10 @@ def make_field_view():
                 with dpg.draw_node(tag="field_robot"):
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 100, 0), fill=(255, 100, 0))
                     dpg.draw_polygon(robot_vertices, thickness=3, fill=(255, 255, 255, 10))
-                
-                with dpg.draw_node(tag="robot_path"):
-                    bezier_points = path_to_cubic_points(current_path)
-                    
-                    for i in range(int(len(bezier_points) / 4)):
-                        # dpg.draw_circle(center=bezier_points[i], radius=3, thickness=2)
-                        dpg.draw_bezier_cubic(
-                            p1=bezier_points[(i*4) + 0],
-                            p2=bezier_points[(i*4) + 1],
-                            p3=bezier_points[(i*4) + 2],
-                            p4=bezier_points[(i*4) + 3],
-                            thickness=5,
-                            color=(155, 155, 255, 200)
-                        )
-
-                with dpg.draw_node(tag="robot_handles", show=False):
-                    bezier_points = path_to_cubic_points(current_path)
-                    
-                    for i in range(int(len(bezier_points) / 4)):
-                        dpg.draw_circle(center=bezier_points[(i*4) + 1], radius=3, thickness=2)
-                        dpg.draw_circle(center=bezier_points[(i*4) + 2], radius=3, thickness=2)
-                        dpg.draw_line(p1=bezier_points[(i*4)], p2=bezier_points[(i*4) + 1])
-                        dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
-
-                with dpg.draw_node(tag="robot_points"):
-                    for node in current_path:
-                        dpg.draw_circle(
-                            center=field_to_canvas(*node[0:2]), 
-                            radius=5, 
-                            thickness=4,
-                            color=(0, 0, 0),
-                            fill=(255, 255, 255)
-                        )
                     
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
+
+        draw_path()
     
     # Make all necessary callback functions
     def drawlist_resize(sender, appdata):
@@ -521,8 +558,8 @@ def draw_call_update():
 
         # Always make sure Y is first otherwise there's gonna be some serious problems
         robot_rotation = dpg.create_rotation_matrix(pitch, [0, 0, 1]) * \
-                            dpg.create_rotation_matrix(roll, [0, 1, 0]) * \
-                            dpg.create_rotation_matrix(yaw, [1, 0, 0])
+                            dpg.create_rotation_matrix(yaw, [0, 1, 0]) * \
+                            dpg.create_rotation_matrix(roll, [1, 0, 0])
         dpg.apply_transform("robot_3d", proj*view*orientation_3d*robot_rotation)
         dpg.apply_transform("grid_3d", proj*view*orientation_3d)
         dpg.apply_transform("axis_3d", proj*view*orientation_3d)
@@ -536,6 +573,8 @@ def draw_call_update():
 
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
+    global table_instance, chooser_options
+
     NetworkTables.startClientTeam(4829)
     
     def connected_callback(connection, info):
@@ -559,55 +598,17 @@ def connect_table_and_listeners(timeout=5):
         dpg.configure_item(item="connection_text", color=(255, 0, 0))
         return
 
-    # Add a bunch of these to the right values assuming they exist
-    global table_instance, chooser_options
 
     table_instance = NetworkTables.getTable("SmartDashboard")
-    chooser_options = ChooserControl("auto_path", inst=table_instance).getChoices()
+    chooser_options = ChooserControl("SendableChooser[0]", inst=NetworkTablesInstance.getDefault()).getChoices()
     dpg.configure_item(item="auto_selector", items=chooser_options)
 
-    # Rotation
-    def set_rotation_values(pitch=None, roll=None, yaw=None):
-        global robot_odometry
+    table_instance.addEntryListener(on_networktales_change)
 
-        if pitch is not None:
-            dpg.set_value(item="orientation_pitch_text", value=f"Pitch: {pitch} deg".rjust(15))
-            dpg.set_value(item="orientation_pitch_bar", value=pitch/360)
-            robot_odometry["pitch"] = pitch
-
-        if roll is not None:
-            dpg.set_value(item="orientation_roll_text", value=f"Toll: {roll} deg".rjust(15))
-            dpg.set_value(item="orientation_roll_bar", value=roll/360)
-            robot_odometry["roll"] = roll
-
-        if yaw is not None:
-            dpg.set_value(item="orientation_yaw_text", value=f"Yaw: {yaw} deg".rjust(15))
-            dpg.set_value(item="orientation_yaw_bar", value=yaw/360)
-            robot_odometry["yaw"] = yaw
-
-    table_instance.addEntryListener(
-        key="pitch", immediateNotify=True,
-        listener=lambda source, key, value, isNew: set_rotation_values(pitch=value),
-    )
-    table_instance.addEntryListener(
-        key="roll", immediateNotify=True,
-        listener=lambda source, key, value, isNew: set_rotation_values(roll=value),
-    )
-    table_instance.addEntryListener(
-        key="yaw", immediateNotify=True,
-        listener=lambda source, key, value, isNew: set_rotation_values(yaw=value),
-    )
-
-    # Position
-    def set_position_values(x=None, y=None):
-        global robot_odometry
-        robot_odometry["field_x"] = x
-        robot_odometry["field_y"] = y
-
-    table_instance.addEntryListener(
-        key="position", immediateNotify=True,
-        listener=lambda source, key, value, isNew: set_position_values(value[0], value[1]),
-    )
+def sample_path():
+    global current_path
+    current_path = alternate_path.copy()
+    draw_path()
 
 def main():
 
@@ -624,6 +625,10 @@ def main():
             dpg.add_button(
                 label="Attempt Reconnect", 
                 callback=lambda _: threading.Thread(target=connect_table_and_listeners, daemon=True).start()
+            )
+            dpg.add_button(
+                label="New Path",
+                callback=sample_path
             )
         dpg.add_spacer(width=30)
         dpg.add_text(default_value="Status:", color=(255, 255, 255, 100))
