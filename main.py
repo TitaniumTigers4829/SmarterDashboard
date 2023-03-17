@@ -384,7 +384,7 @@ def draw_path():
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_points")
 
-    with dpg.draw_node(tag="robot_path", parent="field_robot_pass"):
+    with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=False):
         bezier_points = path_to_cubic_points(current_path)
         
         for i in range(int(len(bezier_points) / 4)):
@@ -398,7 +398,7 @@ def draw_path():
                 color=(155, 155, 255, 200)
             )
 
-    with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=True):
+    with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=False):
         bezier_points = path_to_cubic_points(current_path)
         
         for i in range(int(len(bezier_points) / 4)):
@@ -407,7 +407,7 @@ def draw_path():
             dpg.draw_line(p1=bezier_points[(i*4)], p2=bezier_points[(i*4) + 1])
             dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
 
-    with dpg.draw_node(tag="robot_points", parent="field_robot_pass"):
+    with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=False):
         for node in current_path:
             dpg.draw_circle(
                 center=field_to_canvas(*node[0:2]), 
@@ -461,8 +461,8 @@ def make_field_view():
                 dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
 
             with dpg.menu(label="Path Settings"):
-                dpg.add_checkbox(label="Show Path", tag="ps_show_path", default_value=True)
-                dpg.add_checkbox(label="Show Waypoints", tag="ps_show_waypoints", default_value=True)
+                dpg.add_checkbox(label="Show Path", tag="ps_show_path", default_value=False)
+                dpg.add_checkbox(label="Show Waypoints", tag="ps_show_waypoints", default_value=False)
                 dpg.add_checkbox(label="Show Handles", tag="ps_show_handles", default_value=False)
         
         # Create items
