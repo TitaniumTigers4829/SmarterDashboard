@@ -18,6 +18,7 @@ open_widgets = {
     "grid_view": None,
     "orientation": None,
     "auto_selector": None,
+    "mode_indicator": None,
 }
 # Global variable to see if it's connected
 connection_status = False
@@ -104,6 +105,12 @@ def on_networktales_change(source, key, value, isNew):
         case "position":
             robot_odometry["field_x"] = value[0]
             robot_odometry["field_y"] = value[1]
+        case "botPose":
+            robot_odometry["field_x"] = value[0]
+            robot_odometry["field_y"] = value[1]
+        case "Cargo Mode":
+            dpg.configure_item(item="indicator_cube", show=(value == "Cube"))
+            dpg.configure_item(item="indicator_cone", show=(value == "Cone"))
 
 # Load textures intro registry
 with dpg.texture_registry():
@@ -378,6 +385,68 @@ def make_orientation():
 
         dpg.bind_item_handler_registry("orientation", "orientation_resize_handler")
 
+# Makes the mode indicator
+def make_mode_indicator():
+    global open_widgets, robot_odometry
+
+    if open_widgets["mode_indicator"] is not None:
+        dpg.delete_item(open_widgets["mode_indicator"])
+        dpg.delete_item(item="indicator_drawlist")
+        dpg.delete_item(item="indicator_resize_handler")
+
+    with dpg.window(label="Robot Mode", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=200) as indicator:
+        # Attach orientation to the global widgets
+        open_widgets["mode_indicator"] = indicator
+
+        with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
+            with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
+                with dpg.draw_node(tag="indicator_cube", show=True):
+                    dpg.draw_polygon(
+                        points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
+                        fill=(255, 0, 255, 30),
+                        color=(255, 0, 255),
+                        thickness=5
+                    )
+
+                with dpg.draw_node(tag="indicator_cone", show=False):
+                    dpg.draw_polygon(
+                        points=[[-0.4, -0.4], [-0.4, -0.25], [0.4, -0.25], [0.4, -0.4], [-0.4, -0.4], [-0.4, -0.25]],
+                        fill=(255, 255, 0, 30),
+                        color=(255, 255, 0),
+                        thickness=5
+                    )
+                    dpg.draw_polygon(
+                        points=[[-0.25, -0.25], [-0.05, 0.4], [0.05, 0.4], [0.25, -0.25]],
+                        fill=(255, 255, 0, 30),
+                        color=(255, 255, 0),
+                        thickness=5
+                    )
+
+            dpg.set_clip_space("robot_3d_pass", 0, 0, 100, 100, -5.0, 5.0)
+
+    def drawlist_resize(sender, appdata):
+        width, height = dpg.get_item_rect_size("mode_indicator")
+        width -= 2 * 8
+        height -= 5 * 8
+        dpg.configure_item("indicator_drawlist", width=width, height=height)
+
+        # Drawing space
+        drawing_size = min(width, height)
+        dpg.set_clip_space(
+            item="mode_indicator_pass",
+            top_left_x=((width - drawing_size) // 2),
+            top_left_y=((height - drawing_size) // 2),
+            width=drawing_size,
+            height=drawing_size,
+            min_depth=-5.0,
+            max_depth=5.0
+        )
+    # Make all necessary connections for proper resizing
+    with dpg.item_handler_registry(tag="indicator_resize_handler"):
+        dpg.add_item_resize_handler(callback=drawlist_resize)
+
+    dpg.bind_item_handler_registry("mode_indicator", "indicator_resize_handler")
+
 # Draws the path and all such points
 def draw_path():
     dpg.delete_item(item="robot_path")
@@ -621,6 +690,7 @@ def main():
             dpg.add_menu_item(label="Grid View", callback=make_grid_view)
             dpg.add_menu_item(label="Orientation", callback=make_orientation)
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
+            dpg.add_menu_item(label="Mode Indicator", callback=make_mode_indicator)
         with dpg.menu(label="Override"):
             dpg.add_button(
                 label="Attempt Reconnect", 
@@ -643,6 +713,7 @@ def main():
     make_auto_selector()
     make_orientation()
     make_field_view()
+    make_mode_indicator()
 
     # Setup
     dpg.setup_dearpygui()
