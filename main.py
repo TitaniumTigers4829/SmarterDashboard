@@ -118,6 +118,41 @@ with dpg.texture_registry():
     dpg.add_static_texture(field_width, field_height, field_data, tag="field")
     dpg.add_static_texture(robot_width, robot_height, robot_data, tag="robot")
 
+# Set up theme
+def set_theme():
+    with dpg.theme() as global_theme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_style(dpg.mvStyleVar_WindowTitleAlign, 0.5, 0.5, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 1, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 8, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 16, category=dpg.mvThemeCat_Core)
+
+            accent1 = (236, 151, 29, 103)
+            accent2 = (200, 119, 0, 153)
+            accent3 = (135, 86, 15, 255)
+
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, accent1, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, accent2, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, accent3, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, accent3, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, accent3, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, accent3, category=dpg.mvThemeCat_Core)
+            
+            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, accent2, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, accent1, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, accent2, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, accent1, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, accent2, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, accent1, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, accent2, category=dpg.mvThemeCat_Core)
+
+            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, accent1, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_TabActive, accent2, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocusedActive, accent2, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_DockingPreview, accent2, category=dpg.mvThemeCat_Core)
+
+    dpg.bind_theme(global_theme)
+
 # Makes the grid view
 def make_grid_view():
     grid_aspect = 9 / 3
@@ -678,9 +713,7 @@ def sample_path():
     global current_path
     current_path = alternate_path.copy()
     draw_path()
-
 def main():
-
     # Create the menu bar
     with dpg.viewport_menu_bar(label="Menu", tag="menu"):
         with dpg.menu(label="Settings"):
@@ -699,6 +732,10 @@ def main():
             dpg.add_button(
                 label="New Path",
                 callback=sample_path
+            )
+            dpg.add_button(
+                label="Manual Theme Edit",
+                callback=dpg.show_style_editor
             )
         dpg.add_spacer(width=30)
         dpg.add_text(default_value="Status:", color=(255, 255, 255, 100))
@@ -719,6 +756,7 @@ def main():
     dpg.setup_dearpygui()
     dpg.show_viewport()
 
+    set_theme()
     # Update loop
     while dpg.is_dearpygui_running():
         draw_call_update()
