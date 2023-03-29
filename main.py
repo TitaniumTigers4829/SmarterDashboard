@@ -50,12 +50,31 @@ robot_odometry = {
     "yaw": 0,
 }
 
+limelight_odometry = {
+    "field_x": 8.25,
+    "field_y": 4,
+    "pitch": 0, # 2d rotation
+}
+
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
 field_width, field_height, field_channels, field_data = dpg.load_image('GUI/gamefield.png') # 0: width, 1: height, 2: channels, 3: data
 robot_width, robot_height, robot_channels, robot_data = dpg.load_image('GUI/robot.png')
 
 field_aspect = field_width / field_height
+
+# Make fonts
+with dpg.font_registry():
+    clock_font = dpg.add_font(file="C:\Windows\Fonts\ITCEDSCR.TTF", size=150)
+    # default_font = dpg.add_font(file="C:\Windows\Fonts\ITCEDSCR.TTF", size=24)
+    # dpg.bind_font(default_font)
+
+# Load textures intro registry
+with dpg.texture_registry():
+    dpg.add_static_texture(logo_width, logo_height, logo_data, tag="logo")
+    dpg.add_static_texture(field_width, field_height, field_data, tag="field")
+    dpg.add_static_texture(robot_width, robot_height, robot_data, tag="robot")
+
 
 def field_to_canvas(x, y):
     field_meters_width = 16.54175
@@ -91,16 +110,19 @@ def on_networktales_change(source, key, value, isNew):
 
     match (key):
         case "pitch":
-            dpg.set_value(item="orientation_pitch_text", value=f"Pitch: {np.round(value, 1)} deg".rjust(18))
-            dpg.set_value(item="orientation_pitch_bar", value=(180 + value)/360)
+            if (open_widgets["orientation"] != None): 
+                dpg.set_value(item="orientation_pitch_text", value=f"Pitch: {np.round(value, 1)} deg".rjust(18))
+                dpg.set_value(item="orientation_pitch_bar", value=(180 + value)/360)
             robot_odometry["pitch"] = value
         case "roll":
-            dpg.set_value(item="orientation_roll_text", value=f"Roll: {np.round(value, 1)} deg".rjust(18))
-            dpg.set_value(item="orientation_roll_bar", value=(180 + value)/360)
+            if (open_widgets["orientation"] != None): 
+                dpg.set_value(item="orientation_roll_text", value=f"Roll: {np.round(value, 1)} deg".rjust(18))
+                dpg.set_value(item="orientation_roll_bar", value=(180 + value)/360)
             robot_odometry["roll"] = value
         case "yaw":
-            dpg.set_value(item="orientation_yaw_text", value=f"Yaw: {np.round(value, 1)} deg".rjust(18))
-            dpg.set_value(item="orientation_yaw_bar", value=(180 + value)/360)
+            if (open_widgets["orientation"] != None):
+                dpg.set_value(item="orientation_yaw_text", value=f"Yaw: {np.round(value, 1)} deg".rjust(18))
+                dpg.set_value(item="orientation_yaw_bar", value=(180 + value)/360)
             robot_odometry["yaw"] = value
         case "position":
             robot_odometry["field_x"] = value[0]
@@ -111,12 +133,10 @@ def on_networktales_change(source, key, value, isNew):
         case "Cargo Mode":
             dpg.configure_item(item="indicator_cube", show=(value == "Cube"))
             dpg.configure_item(item="indicator_cone", show=(value == "Cone"))
-
-# Load textures intro registry
-with dpg.texture_registry():
-    dpg.add_static_texture(logo_width, logo_height, logo_data, tag="logo")
-    dpg.add_static_texture(field_width, field_height, field_data, tag="field")
-    dpg.add_static_texture(robot_width, robot_height, robot_data, tag="robot")
+        case "limelight_pose":
+            limelight_odometry["field_x"] = value[0]
+            limelight_odometry["field_y"] = value[1]
+            limelight_odometry["pitch"] = value[2]
 
 # Set up theme
 def set_theme():
@@ -128,17 +148,17 @@ def set_theme():
             dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 16, category=dpg.mvThemeCat_Core)
 
             accent1 = (236, 151, 29, 103)
-            accent2 = (200, 119, 0, 153)
+            accent2 = (200, 119, 0, 255)
             accent3 = (135, 86, 15, 255)
 
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, accent1, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, accent2, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, accent3, category=dpg.mvThemeCat_Core)
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, accent3, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, accent3, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, accent3, category=dpg.mvThemeCat_Core)
             
             dpg.add_theme_color(dpg.mvThemeCol_CheckMark, accent2, category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_PlotHistogram, accent2, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, accent1, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, accent2, category=dpg.mvThemeCat_Core)
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, accent1, category=dpg.mvThemeCat_Core)
@@ -457,7 +477,7 @@ def make_mode_indicator():
                         thickness=5
                     )
 
-            dpg.set_clip_space("robot_3d_pass", 0, 0, 100, 100, -5.0, 5.0)
+            dpg.set_clip_space("mode_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
 
     def drawlist_resize(sender, appdata):
         width, height = dpg.get_item_rect_size("mode_indicator")
@@ -481,6 +501,46 @@ def make_mode_indicator():
         dpg.add_item_resize_handler(callback=drawlist_resize)
 
     dpg.bind_item_handler_registry("mode_indicator", "indicator_resize_handler")
+
+# Makes the countdown
+def make_round_countdown():
+    global open_widgets
+
+    with dpg.window(label="Round Countdown", tag="round_countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=200):
+        dpg.add_text(default_value="Time Left")
+
+        with dpg.drawlist(width=100, height=100, tag="countdown_drawlist"):
+            with dpg.draw_layer(tag="countdown_pass", depth_clipping=False, perspective_divide=True):
+                dpg.draw_text(pos=(-0.5, 0.5), text="2:45", size=200, tag="round_countdown_text")
+
+        dpg.bind_item_font("round_countdown_text", clock_font)
+
+        dpg.set_clip_space("countdown_pass", 0, 0, 100, 100, -5.0, 5.0)
+
+        def drawlist_resize(sender, appdata):
+            width, height = dpg.get_item_rect_size("round_countdown")
+            width -= 2 * 8
+            height -= 5 * 8
+            dpg.configure_item("countdown_drawlist", width=width, height=height)
+            dpg.configure_item("round_countdown_text", size=min(width / 2.3, height / 1.2))
+
+            # Drawing space
+            drawing_size = min(width, height)
+            dpg.set_clip_space(
+                item="countdown_pass",
+                top_left_x=((width - drawing_size) // 2),
+                top_left_y=((height - drawing_size) // 2),
+                width=drawing_size,
+                height=drawing_size,
+                min_depth=-5.0,
+                max_depth=5.0
+            )
+
+        # Make all necessary connections for proper resizing
+        with dpg.item_handler_registry(tag="countdown_resize_handler"):
+            dpg.add_item_resize_handler(callback=drawlist_resize)
+
+        dpg.bind_item_handler_registry("round_countdown", "countdown_resize_handler")
 
 # Draws the path and all such points
 def draw_path():
@@ -563,6 +623,7 @@ def make_field_view():
 
             with dpg.menu(label="Robot Settings"):
                 dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
+                dpg.add_checkbox(label="Show Limelight Estimate", tag="rs_show_limelight", default_value=False)
 
             with dpg.menu(label="Path Settings"):
                 dpg.add_checkbox(label="Show Path", tag="ps_show_path", default_value=False)
@@ -574,9 +635,13 @@ def make_field_view():
             dpg.draw_image(texture_tag="field", tag="field_image", pmin=(0, 0), pmax=(field_width, field_height))
 
             with dpg.draw_layer(tag="field_robot_pass", depth_clipping=False, perspective_divide=True):
+                with dpg.draw_node(tag="limelight_robot", show=False):
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(200, 255, 200, 50), fill=(200, 255, 200, 50))
+                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(15, 255, 15, 50), fill=(15, 200, 15, 50))
+
                 with dpg.draw_node(tag="field_robot"):
+                    dpg.draw_polygon(robot_vertices, thickness=3, fill=(255, 200, 150, 80))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 100, 0), fill=(255, 100, 0))
-                    dpg.draw_polygon(robot_vertices, thickness=3, fill=(255, 255, 255, 10))
                     
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
 
@@ -627,6 +692,10 @@ def make_field_view():
         callback=lambda x: dpg.configure_item("field_robot", show=dpg.get_value(x))
     )
     dpg.set_item_callback(
+        "rs_show_limelight",
+        callback=lambda x: dpg.configure_item("limelight_robot", show=dpg.get_value(x))
+    )
+    dpg.set_item_callback(
         "ps_show_path",
         callback=lambda x: dpg.configure_item("robot_path", show=dpg.get_value(x))
     )
@@ -654,6 +723,9 @@ def draw_call_update():
 
     x, y = field_to_canvas(robot_odometry["field_x"], robot_odometry["field_y"])
 
+    limelight_pitch = limelight_odometry["pitch"] * np.pi / 180
+    limelight_x, limelight_y = field_to_canvas(limelight_odometry["field_x"], limelight_odometry["field_y"])
+
     # Orientation
     if open_widgets["orientation"] is not None:
         view = dpg.create_fps_matrix([0, 20, 10], pitch=(np.pi / 3), yaw=(np.pi))
@@ -661,7 +733,7 @@ def draw_call_update():
         orientation_3d = dpg.create_rotation_matrix(-np.pi / 4, [0, 0, 1])
 
         # Always make sure Y is first otherwise there's gonna be some serious problems
-        robot_rotation = dpg.create_rotation_matrix(pitch, [0, 0, 1]) * \
+        robot_rotation = dpg.create_rotation_matrix(np.pi / 2 - pitch, [0, 0, 1]) * \
                             dpg.create_rotation_matrix(yaw, [0, 1, 0]) * \
                             dpg.create_rotation_matrix(roll, [1, 0, 0])
         dpg.apply_transform("robot_3d", proj*view*orientation_3d*robot_rotation)
@@ -671,9 +743,15 @@ def draw_call_update():
     # Field View
     if open_widgets["field_view"] is not None:
         field_scale = dpg.create_scale_matrix([1, field_aspect])
-        field_rotation = dpg.create_rotation_matrix(pitch, [0, 0, -1])
+        field_rotation = dpg.create_rotation_matrix(np.pi / 2 - pitch, [0, 0, -1])
         field_position = dpg.create_translation_matrix([x, y])
+
+        limelight_scale = dpg.create_scale_matrix([1, field_aspect])
+        limelight_rotation = dpg.create_rotation_matrix(np.pi / 2 - limelight_pitch, [0, 0, -1])
+        limelight_position = dpg.create_translation_matrix([limelight_x, limelight_y])
+        
         dpg.apply_transform("field_robot", field_scale*field_position*field_rotation)
+        dpg.apply_transform("limelight_robot", limelight_scale*limelight_position*limelight_rotation)
 
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
@@ -713,6 +791,7 @@ def sample_path():
     global current_path
     current_path = alternate_path.copy()
     draw_path()
+
 def main():
     # Create the menu bar
     with dpg.viewport_menu_bar(label="Menu", tag="menu"):
@@ -748,8 +827,9 @@ def main():
     # Make all the windows to start with
     make_grid_view()
     make_auto_selector()
-    make_orientation()
+    # make_orientation()
     make_field_view()
+    make_round_countdown()
     make_mode_indicator()
 
     # Setup
