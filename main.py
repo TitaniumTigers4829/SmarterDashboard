@@ -58,16 +58,17 @@ limelight_odometry = {
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
-field_width, field_height, field_channels, field_data = dpg.load_image('GUI/gamefield.png') # 0: width, 1: height, 2: channels, 3: data
+field_width, field_height, field_channels, field_data = dpg.load_image('GUI/2160xDarkCroppedFixed.png') # 0: width, 1: height, 2: channels, 3: data
 robot_width, robot_height, robot_channels, robot_data = dpg.load_image('GUI/robot.png')
 
 field_aspect = field_width / field_height
 
 # Make fonts
 with dpg.font_registry():
+    default_font = dpg.add_font(file="C:\Windows\Fonts\ITCEDSCR.TTF", size=48)
     clock_font = dpg.add_font(file="C:\Windows\Fonts\ITCEDSCR.TTF", size=150)
-    # default_font = dpg.add_font(file="C:\Windows\Fonts\ITCEDSCR.TTF", size=24)
-    # dpg.bind_font(default_font)
+
+    #dpg.bind_font(default_font)
 
 # Load textures intro registry
 with dpg.texture_registry():
@@ -458,16 +459,16 @@ def make_mode_indicator():
                 with dpg.draw_node(tag="indicator_cube", show=True):
                     dpg.draw_polygon(
                         points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
-                        fill=(255, 0, 255, 30),
-                        color=(255, 0, 255),
+                        fill=(255, 165, 0, 30),
+                        color=(255, 165, 0),
                         thickness=5
                     )
 
                 with dpg.draw_node(tag="indicator_cone", show=False):
                     dpg.draw_polygon(
                         points=[[-0.4, -0.4], [-0.4, -0.25], [0.4, -0.25], [0.4, -0.4], [-0.4, -0.4], [-0.4, -0.25]],
-                        fill=(255, 255, 0, 30),
-                        color=(255, 255, 0),
+                        fill=(255, 255, 255, 30),
+                        color=(255, 255, 255),
                         thickness=5
                     )
                     dpg.draw_polygon(
@@ -825,7 +826,6 @@ def main():
     threading.Thread(target=connect_table_and_listeners, daemon=True).start()
     
     # Make all the windows to start with
-    make_grid_view()
     make_auto_selector()
     # make_orientation()
     make_field_view()
