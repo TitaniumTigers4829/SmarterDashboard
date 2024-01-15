@@ -58,7 +58,7 @@ limelight_odometry = {
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
-field_width, field_height, field_channels, field_data = dpg.load_image('GUI/2160xDarkCroppedFixed.png') # 0: width, 1: height, 2: channels, 3: data
+field_width, field_height, field_channels, field_data = dpg.load_image('GUI/field24.png') # 0: width, 1: height, 2: channels, 3: data
 robot_width, robot_height, robot_channels, robot_data = dpg.load_image('GUI/robot.png')
 
 field_aspect = field_width / field_height
