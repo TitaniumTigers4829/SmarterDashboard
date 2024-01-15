@@ -15,7 +15,6 @@ dpg.create_viewport(title="4829 SmarterDashboard", width=800, height=600)
 # Create a global dictionary to store if windows are already open
 open_widgets = {
     "field_view": None,
-    "grid_view": None,
     "orientation": None,
     "auto_selector": None,
     "mode_indicator": None,
@@ -175,126 +174,7 @@ def set_theme():
     dpg.bind_theme(global_theme)
 
 # Makes the grid view
-def make_grid_view():
-    grid_aspect = 9 / 3
-    margin = 0.015
-
-    grid_values = [
-        (-0.45 + margin, -0.15 + margin), (-0.15 - margin, 0.15 - margin),
-        (-0.15 + margin, -0.15 + margin), ( 0.15 - margin, 0.15 - margin),
-        ( 0.15 + margin, -0.15 + margin), ( 0.45 - margin, 0.15 - margin)
-    ]
-
-    global open_widgets
-    if open_widgets["grid_view"] is not None:
-        dpg.delete_item(open_widgets["grid_view"])
-        dpg.delete_item(item="grid_drawlist")
-        dpg.delete_item(item="grid_resize_handler")
-
-    with dpg.window(label="Grid View", tag="grid_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=300, height=400) as grid_view:
-        # Attach grid_view to the global widgets
-        open_widgets["grid_view"] = grid_view
-
-        # Make the window menu
-        with dpg.menu_bar(label="Grid Menu", tag="grid_menu"):
-            with dpg.menu(label="Settings"):
-                dpg.add_checkbox(label="Show Blocks", tag="s_show_blocks", default_value=True)
-
-        with dpg.drawlist(width=100, height=100, tag="grid_drawlist"):
-            with dpg.draw_layer(tag="grid_pass", depth_clipping=False, perspective_divide=True):
-                # Grid blocks
-                with dpg.draw_node(tag="grid_block_node"):
-                    dpg.draw_rectangle(pmin=grid_values[0], pmax=grid_values[1])
-                    dpg.draw_rectangle(pmin=grid_values[2], pmax=grid_values[3])
-                    dpg.draw_rectangle(pmin=grid_values[4], pmax=grid_values[5])
-
-                # Actual grid
-                # todo figure out a way to make this not god awful
-                with dpg.draw_node(tag="grid_node"):
-                    x_difference = grid_values[1][0] - grid_values[0][0]
-                    y_difference = grid_values[1][1] - grid_values[0][1]
-
-                    for x in range(3):
-                        for y in range(3):
-                            x_pos = x * ((x_difference / 3) - margin)
-                            y_pos = y * ((y_difference / 3) - margin)
-                            center = (
-                                grid_values[0][0] + margin + (x_difference / 6) + x_pos, 
-                                grid_values[0][1] + margin + (y_difference / 6) + y_pos
-                            )
-                            dpg.draw_circle(
-                                center=center, 
-                                radius=4, 
-                                thickness=1
-                            )
-
-                    for x in range(3):
-                        for y in range(3):
-                            x_pos = x * ((x_difference / 3) - margin)
-                            y_pos = y * ((y_difference / 3) - margin)
-                            center = (
-                                grid_values[2][0] + margin + (x_difference / 6) + x_pos, 
-                                grid_values[2][1] + margin + (y_difference / 6) + y_pos
-                            )
-                            dpg.draw_circle(
-                                center=center, 
-                                radius=4, 
-                                thickness=1
-                            )
-
-                    for x in range(3):
-                        for y in range(3):
-                            x_pos = x * ((x_difference / 3) - margin)
-                            y_pos = y * ((y_difference / 3) - margin)
-                            center = (
-                                grid_values[4][0] + margin + (x_difference / 6) + x_pos, 
-                                grid_values[4][1] + margin + (y_difference / 6) + y_pos
-                            )
-                            dpg.draw_circle(
-                                center=center, 
-                                radius=4, 
-                                thickness=1
-                            )
-
-        dpg.set_clip_space("grid_pass", 0, 0, 100, 100, -1.0, 1.0)
-        grid_scale = dpg.create_scale_matrix([1, grid_aspect])
-        dpg.apply_transform("grid_block_node", grid_scale)
-        dpg.apply_transform("grid_node", grid_scale)
-
-    # Make all necessary callback functions
-    def drawlist_resize(sender, appdata):
-        width, height = dpg.get_item_rect_size("grid_view")
-        # Annoying hack to get things sizing properly
-        width -= 2 * 8
-        height -= 7 * 8
-        dpg.configure_item("grid_drawlist", width=width, height=height)
-
-        # Dynamic field image resizing and positioning
-        new_field_width = width
-        new_field_height = height
-        if (new_field_width > new_field_height * grid_aspect):
-            new_field_width = height * grid_aspect
-
-        elif (new_field_width < new_field_height * grid_aspect):
-            new_field_height = width * (1 / grid_aspect)
-
-        # Configure the clip space for the robot
-        dpg.set_clip_space(
-            item="grid_pass", 
-            top_left_x=((width - new_field_width) // 2), 
-            top_left_y=((height - new_field_height) // 2), 
-            width=new_field_width, 
-            height=new_field_height,
-            min_depth=-1.0,
-            max_depth=1.0
-        )
-
-    # Resize handler
-    with dpg.item_handler_registry(tag="grid_resize_handler"):
-        dpg.add_item_resize_handler(callback=drawlist_resize)
-
-    dpg.bind_item_handler_registry("grid_view", "grid_resize_handler")
-    
+ 
 # Makes the auto selector window
 def make_auto_selector():
     global open_widgets, chooser_options
@@ -800,7 +680,6 @@ def main():
             dpg.add_menu_item(label="Enable Something")
         with dpg.menu(label="Widgets"):
             dpg.add_menu_item(label="Field View", callback=make_field_view)
-            dpg.add_menu_item(label="Grid View", callback=make_grid_view)
             dpg.add_menu_item(label="Orientation", callback=make_orientation)
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
             dpg.add_menu_item(label="Mode Indicator", callback=make_mode_indicator)
@@ -831,6 +710,7 @@ def main():
     make_field_view()
     make_round_countdown()
     make_mode_indicator()
+    make_orientation()
 
     # Setup
     dpg.setup_dearpygui()
