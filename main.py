@@ -64,8 +64,8 @@ field_aspect = field_width / field_height
 
 # Make fonts
 with dpg.font_registry():
-    default_font = dpg.add_font(file="C:\Windows\Fonts\ITCEDSCR.TTF", size=48)
-    clock_font = dpg.add_font(file="C:\Windows\Fonts\ITCEDSCR.TTF", size=150)
+    default_font = dpg.add_font(file='GUI/Freedom-10eM.ttf', size=48)
+    clock_font = dpg.add_font(file='GUI/Freedom-10eM.ttf', size=150)
 
     #dpg.bind_font(default_font)
 
