@@ -24,22 +24,6 @@ open_widgets = {
 connection_status = False
 # Global chooser options
 chooser_options = []
-# Current path
-current_path = [
-    [9.5, 8, -38.8, 180],
-    [5.3, 4.75, 180, 180],
-    [2.5, 4.75, 180, 180],
-    [1.5, 1.42, 180, 180]
-]
-
-alternate_path = [
-    [9.5, 1, -38.8, 180],
-    [5.3, 4.75, 180, 180],
-    [2.5, 8.75, 180, 180],
-    [1.5, 4.42, 180, 180],
-    [1.5, 2.42, 180, 180],
-    [9.5, 5.42, 180, 180],
-]
 
 # Global robot data
 robot_odometry = {
@@ -55,6 +39,27 @@ limelight_odometry = {
     "field_y": 4,
     "pitch": 0, # 2d rotation
 }
+# Current path
+
+path_to_red_amp = [
+    [13.75, 10, 0, 0],
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
+]
+
+path_to_blue_amp = [
+    [2.5, 10, 0, 0],
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
+]
+
+path_to_red_speaker = [
+    [15.25, 7.25, 0, 0],
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
+]
+
+path_to_blue_speaker = [
+    [1.25, 7, 0, 0],
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
+]
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -104,7 +109,7 @@ def path_to_cubic_points(path):
     return points
 
 # God function for networktables callbacks
-def on_networktales_change(source, key, value, isNew):
+def on_networktables_change(source, key, value, isNew):
     global robot_odometry
 
     # TODO: Figure out a way to stop it from erroring when closing the program when connected
@@ -134,9 +139,19 @@ def on_networktales_change(source, key, value, isNew):
         case "canShoot":
             dpg.configure_item(item="can_shoot", show=(value == "Can Shoot"))
             dpg.configure_item(item="can_not_shoot", show=(value == "Can Not Shoot"))
-        case "isAutoPathBeingFollowed":
-            dpg.configure_item(item="PathBeingFollowed", show=(value == "Path Detected"))
-            dpg.configure_item(item="PathNotBeingFollowed", show=(value == "Path Not Detected"))
+        case "pathData":
+            dpg.configure_item(item="pathData[0]", show=(value == "Path Detected"))
+            dpg.configure_item(item="pathData[1]", show=(value == "Red or Blue"))
+            dpg.configure_item(item="pathData[2]", show=(value == "Speaker or Amp"))
+            if(value[0] == True):
+                if (value[1] == True) & (value[2] == True):
+                    draw_path(path_to_red_speaker)
+                elif(value[1] == True) & (value[2] == False ):
+                    draw_path(path_to_red_amp)
+                if (value[1] == False) & (value[2] == True):
+                    draw_path(path_to_blue_speaker)
+                elif(value[1] == False) & (value[2] == False ):
+                    draw_path(path_to_blue_amp)
         case "limelight_pose":
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
@@ -490,16 +505,15 @@ def make_round_countdown():
         dpg.bind_item_handler_registry("round_countdown", "countdown_resize_handler")
 
 # Draws the path and all such points
-def draw_path():
+def draw_path(path_to_place):
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_points")
 
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
-        bezier_points = path_to_cubic_points(current_path)
+        bezier_points = path_to_cubic_points(path_to_place)
         
         for i in range(int(len(bezier_points) / 4)):
-            # dpg.draw_circle(center=bezier_points[i], radius=3, thickness=2)
             dpg.draw_bezier_cubic(
                 p1=bezier_points[(i*4) + 0],
                 p2=bezier_points[(i*4) + 1],
@@ -510,7 +524,7 @@ def draw_path():
             )
 
     with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=False):
-        bezier_points = path_to_cubic_points(current_path)
+        bezier_points = path_to_cubic_points(path_to_red_amp)
         
         for i in range(int(len(bezier_points) / 4)):
             dpg.draw_circle(center=bezier_points[(i*4) + 1], radius=3, thickness=2)
@@ -519,7 +533,7 @@ def draw_path():
             dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
 
     with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
-        for node in current_path:
+        for node in path_to_red_amp:
             dpg.draw_circle(
                 center=field_to_canvas(*node[0:2]), 
                 radius=5, 
@@ -551,7 +565,7 @@ def make_field_view():
         [0,  robot_height * 0.25],
     ]
 
-    global open_widgets, current_path
+    global open_widgets, path_to_red_amp
 
     if open_widgets["field_view"] is not None:
         dpg.delete_item(open_widgets["field_view"])
@@ -592,8 +606,6 @@ def make_field_view():
                     
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
 
-        draw_path()
-    
     # Make all necessary callback functions
     def drawlist_resize(sender, appdata):
         width, height = dpg.get_item_rect_size("field_view")
@@ -732,11 +744,11 @@ def connect_table_and_listeners(timeout=5):
     chooser_options = ChooserControl("SendableChooser[0]", inst=NetworkTablesInstance.getDefault()).getChoices()
     dpg.configure_item(item="auto_selector", items=chooser_options)
 
-    table_instance.addEntryListener(on_networktales_change)
+    table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    global current_path
-    current_path = alternate_path.copy()
+    global path_to_red_amp
+    path_to_red_amp = path_to_blue_amp.copy()
     draw_path()
 
 def main():
@@ -778,7 +790,6 @@ def main():
     make_mode_indicator()
     make_path_detection()
     make_orientation()
-
     # Setup
     dpg.setup_dearpygui()
     dpg.show_viewport()
