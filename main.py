@@ -586,12 +586,12 @@ def make_field_view():
 
             with dpg.draw_layer(tag="field_robot_pass", depth_clipping=False, perspective_divide=True):
                 with dpg.draw_node(tag="limelight_robot", show=False):
-                    dpg.draw_polygon(robot_vertices, thickness=3, color=(200, 255, 200, 50), fill=(200, 255, 200, 50))
-                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(15, 255, 15, 50), fill=(15, 200, 15, 50))
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 255, 255, 50), fill=(200, 255, 200, 50))
+                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(14, 255, 14, 50), fill=(15, 200, 15, 50))
 
                 with dpg.draw_node(tag="field_robot"):
-                    dpg.draw_polygon(robot_vertices, thickness=3, fill=(255, 200, 150, 80))
-                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 100, 0), fill=(255, 100, 0))
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 10))
+                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 255, 255), fill=(255, 255, 255))
                     
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
 
