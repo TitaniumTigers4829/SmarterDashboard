@@ -350,7 +350,7 @@ def make_mode_indicator():
                 with dpg.draw_node(tag="can_shoot", show=True):
                     dpg.draw_circle(
                         center=(0,0), 
-                        radius=25, 
+                        radius=(dpg.get_item_height(indicator)/4), 
                         color=(255, 94, 5), 
                         thickness=5, 
                         fill=(255, 94, 5, 50)
@@ -361,8 +361,8 @@ def make_mode_indicator():
                 with dpg.draw_node(tag="can_not_shoot", show=False):
                     dpg.draw_polygon(
                         points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
-                        fill=(255, 0, 0, 10),
-                        color=(255, 0, 0),
+                        color=(186, 0, 0),
+                        fill=(186, 0, 0, 10),
                         thickness=5
                         )
 
@@ -412,7 +412,7 @@ def make_path_detection():
                         radius=25, 
                         color=(144, 238, 144), 
                         thickness=5, 
-                        fill=(144, 238, 144, 50)
+                        fill=(144, 238, 144, 10)
                         )
 
                 with dpg.draw_node(tag="PathNotBeingFollowed", show=True):
@@ -420,8 +420,8 @@ def make_path_detection():
                         center=(0,0), 
                         radius=25, 
                         color=(186, 0, 0), 
+                        fill=(186, 0, 0, 50),
                         thickness=5, 
-                        fill=(186, 0, 0, 50)
                         )
 
             dpg.set_clip_space("path_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
