@@ -348,26 +348,23 @@ def make_mode_indicator():
         with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
             with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
                 with dpg.draw_node(tag="can_shoot", show=True):
-                    dpg.draw_polygon(
-                        points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
-                        fill=(255, 165, 0, 30),
-                        color=(255, 165, 0),
-                        thickness=5
-                    )
+                    dpg.draw_circle(
+                        center=(0,0), 
+                        radius=25, 
+                        color=(255, 94, 5), 
+                        thickness=5, 
+                        fill=(255, 94, 5, 50)
+                        )    
+                 
+
 
                 with dpg.draw_node(tag="can_not_shoot", show=False):
                     dpg.draw_polygon(
-                        points=[[-0.4, -0.4], [-0.4, -0.25], [0.4, -0.25], [0.4, -0.4], [-0.4, -0.4], [-0.4, -0.25]],
-                        fill=(255, 255, 255, 30),
-                        color=(255, 255, 255),
+                        points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
+                        fill=(255, 0, 0, 10),
+                        color=(255, 0, 0),
                         thickness=5
-                    )
-                    dpg.draw_polygon(
-                        points=[[-0.25, -0.25], [-0.05, 0.4], [0.05, 0.4], [0.25, -0.25]],
-                        fill=(255, 255, 0, 30),
-                        color=(255, 255, 0),
-                        thickness=5
-                    )
+                        )
 
             dpg.set_clip_space("mode_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
 
@@ -409,7 +406,7 @@ def make_path_detection():
 
         with dpg.drawlist(width=100, height=100, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="PathBeingFollowed", show=True):
+                with dpg.draw_node(tag="PathBeingFollowed", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
@@ -418,7 +415,7 @@ def make_path_detection():
                         fill=(144, 238, 144, 50)
                         )
 
-                with dpg.draw_node(tag="PathNotBeingFollowed", show=False):
+                with dpg.draw_node(tag="PathNotBeingFollowed", show=True):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
