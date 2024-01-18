@@ -394,12 +394,11 @@ def make_round_countdown():
     global open_widgets
 
     with dpg.window(label="Round Countdown", tag="round_countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as round_countdown:
-        dpg.add_text(default_value="Time Left")
         dpg.set_item_pos("round_countdown", (dpg.get_viewport_width()-(dpg.get_item_width(round_countdown)+20),dpg.get_viewport_height()-(dpg.get_item_height(round_countdown)+175)))
 
         with dpg.drawlist(width=100, height=100, tag="countdown_drawlist"):
             with dpg.draw_layer(tag="countdown_pass", depth_clipping=False, perspective_divide=True):
-                dpg.draw_text(pos=(-0.5, 0.5), text="2:45", size=200, tag="round_countdown_text")
+                dpg.draw_text(pos=(-0.6, 0.5), text="2:45", size=200, tag="round_countdown_text")
 
         dpg.bind_item_font("round_countdown_text", clock_font)
 
