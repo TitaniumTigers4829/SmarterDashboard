@@ -26,7 +26,7 @@ connection_status = False
 chooser_options = []
 # Current path
 current_path = [
-    [15, 8, -38.8, 180],
+    [9.5, 8, -38.8, 180],
     [5.3, 4.75, 180, 180],
     [2.5, 4.75, 180, 180],
     [1.5, 1.42, 180, 180]
@@ -340,7 +340,7 @@ def make_mode_indicator():
         dpg.delete_item(item="indicator_drawlist")
         dpg.delete_item(item="indicator_resize_handler")
 
-    with dpg.window(label="Shooter Available", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
+    with dpg.window(label="Can Shooter Shoot", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
         dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+180)))
@@ -351,9 +351,9 @@ def make_mode_indicator():
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=(dpg.get_item_height(indicator)/4), 
-                        color=(255, 94, 5), 
+                        color=(5, 255, 5), 
                         thickness=5, 
-                        fill=(255, 94, 5, 50)
+                        fill=(5, 94, 5, 50)
                         )    
                  
 
@@ -410,7 +410,7 @@ def make_path_detection():
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
-                        color=(144, 238, 144), 
+                        color=(5, 255, 5), 
                         thickness=5, 
                         fill=(144, 238, 144, 10)
                         )
