@@ -587,8 +587,8 @@ def make_field_view():
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(14, 255, 14, 50), fill=(15, 200, 15, 50))
 
                 with dpg.draw_node(tag="field_robot", show=True):
-                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 10))
-                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 255, 255), fill=(255, 255, 255))
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5))#, fill=(255, 94, 5, 100))
+                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
                     
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
 
