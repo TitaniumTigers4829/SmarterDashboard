@@ -190,11 +190,12 @@ def make_auto_selector():
         # Attach auto selector to global widgets
 
         open_widgets["auto_selector"] = auto_selector
+        dpg.add_combo(tag="auto_selector", items=chooser_options, width=-10)
+
+        dpg.set_item_pos(auto_selector, (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector)+20),dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+380)))
 
         # Add items
         dpg.add_text(default_value="Select Auto Path")
-        dpg.add_combo(tag="auto_selector", items=chooser_options, width=-10)
-        dpg.set_item_pos("auto_selector", (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector)+20),dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+250)))
 
 
     # Attach necessary callbacks
@@ -235,7 +236,7 @@ def make_orientation():
         dpg.delete_item(item="orientation_drawlist")
         dpg.delete_item(item="orientation_resize_handler")
 
-    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=400) as orientation:
+    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=300) as orientation:
         # Attach orientation to the global widgets
         open_widgets["orientation"] = orientation
         dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+20),0))
@@ -338,7 +339,7 @@ def make_mode_indicator():
     with dpg.window(label="Robot Mode", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
-        dpg.set_item_pos("mode_indicator", (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+75)))
+        dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+180)))
 
         with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
             with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
@@ -394,7 +395,7 @@ def make_round_countdown():
     global open_widgets
 
     with dpg.window(label="Round Countdown", tag="round_countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as round_countdown:
-        dpg.set_item_pos("round_countdown", (dpg.get_viewport_width()-(dpg.get_item_width(round_countdown)+20),dpg.get_viewport_height()-(dpg.get_item_height(round_countdown)+175)))
+        dpg.set_item_pos(round_countdown, (dpg.get_viewport_width()-(dpg.get_item_width(round_countdown)+20),dpg.get_viewport_height()-(dpg.get_item_height(round_countdown)+280)))
 
         with dpg.drawlist(width=100, height=100, tag="countdown_drawlist"):
             with dpg.draw_layer(tag="countdown_pass", depth_clipping=False, perspective_divide=True):
