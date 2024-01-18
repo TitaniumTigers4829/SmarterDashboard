@@ -131,7 +131,7 @@ def on_networktales_change(source, key, value, isNew):
         case "botPose":
             robot_odometry["field_x"] = value[0]
             robot_odometry["field_y"] = value[1]
-        case "cargoMode":
+        case "canShoot":
             dpg.configure_item(item="can_shoot", show=(value == "Can Shoot"))
             dpg.configure_item(item="can_not_shoot", show=(value == "Can Not Shoot"))
         case "isAutoPathBeingFollowed":
