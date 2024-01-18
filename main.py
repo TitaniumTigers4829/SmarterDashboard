@@ -340,7 +340,7 @@ def make_mode_indicator():
         dpg.delete_item(item="indicator_drawlist")
         dpg.delete_item(item="indicator_resize_handler")
 
-    with dpg.window(label="Robot Mode", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
+    with dpg.window(label="Shooter Available", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
         dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+180)))
@@ -587,7 +587,7 @@ def make_field_view():
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(14, 255, 14, 50), fill=(15, 200, 15, 50))
 
                 with dpg.draw_node(tag="field_robot", show=True):
-                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5))#, fill=(255, 94, 5, 100))
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
                     
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
