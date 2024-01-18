@@ -26,7 +26,7 @@ connection_status = False
 chooser_options = []
 # Current path
 current_path = [
-    [9.5, 8, -38.8, 180],
+    [15, 8, -38.8, 180],
     [5.3, 4.75, 180, 180],
     [2.5, 4.75, 180, 180],
     [1.5, 1.42, 180, 180]
@@ -111,7 +111,7 @@ def on_networktales_change(source, key, value, isNew):
 
     match (key):
         case "pitch":
-            if (open_widgets["orientation"] != None): 
+            if (open_widgets["orientation"] != None):
                 dpg.set_value(item="orientation_pitch_text", value=f"Pitch: {np.round(value, 1)} deg".rjust(18))
                 dpg.set_value(item="orientation_pitch_bar", value=(180 + value)/360)
             robot_odometry["pitch"] = value
@@ -131,9 +131,12 @@ def on_networktales_change(source, key, value, isNew):
         case "botPose":
             robot_odometry["field_x"] = value[0]
             robot_odometry["field_y"] = value[1]
-        case "Cargo Mode":
-            dpg.configure_item(item="indicator_cube", show=(value == "Cube"))
-            dpg.configure_item(item="indicator_cone", show=(value == "Cone"))
+        case "cargoMode":
+            dpg.configure_item(item="can_shoot", show=(value == "Can Shoot"))
+            dpg.configure_item(item="can_not_shoot", show=(value == "Can Not Shoot"))
+        case "isAutoPathBeingFollowed":
+            dpg.configure_item(item="PathBeingFollowed", show=(value == "Path Detected"))
+            dpg.configure_item(item="PathNotBeingFollowed", show=(value == "Path Not Detected"))
         case "limelight_pose":
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
@@ -344,7 +347,7 @@ def make_mode_indicator():
 
         with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
             with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="indicator_cube", show=True):
+                with dpg.draw_node(tag="can_shoot", show=True):
                     dpg.draw_polygon(
                         points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
                         fill=(255, 165, 0, 30),
@@ -352,7 +355,7 @@ def make_mode_indicator():
                         thickness=5
                     )
 
-                with dpg.draw_node(tag="indicator_cone", show=False):
+                with dpg.draw_node(tag="can_not_shoot", show=False):
                     dpg.draw_polygon(
                         points=[[-0.4, -0.4], [-0.4, -0.25], [0.4, -0.25], [0.4, -0.4], [-0.4, -0.4], [-0.4, -0.25]],
                         fill=(255, 255, 255, 30),
@@ -402,11 +405,11 @@ def make_path_detection():
     with dpg.window(label="Auto Path Detection", tag="path_detection", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as detection:
         # Attach orientation to the global widgets
         open_widgets["path_detection"] = detection
-        dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+65)))
+        dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+80)))
 
         with dpg.drawlist(width=100, height=100, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="path_detected", show=True):
+                with dpg.draw_node(tag="PathBeingFollowed", show=True):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
@@ -415,7 +418,7 @@ def make_path_detection():
                         fill=(144, 238, 144, 50)
                         )
 
-                with dpg.draw_node(tag="path_not_detected", show=False):
+                with dpg.draw_node(tag="PathNotBeingFollowed", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
@@ -495,7 +498,7 @@ def draw_path():
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_points")
 
-    with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=False):
+    with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         bezier_points = path_to_cubic_points(current_path)
         
         for i in range(int(len(bezier_points) / 4)):
@@ -518,7 +521,7 @@ def draw_path():
             dpg.draw_line(p1=bezier_points[(i*4)], p2=bezier_points[(i*4) + 1])
             dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
 
-    with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=False):
+    with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
         for node in current_path:
             dpg.draw_circle(
                 center=field_to_canvas(*node[0:2]), 
