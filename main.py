@@ -583,7 +583,7 @@ def make_field_view():
 
             with dpg.draw_layer(tag="field_robot_pass", depth_clipping=False, perspective_divide=True):
                 with dpg.draw_node(tag="limelight_robot", show=False):
-                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 255, 255, 50), fill=(200, 255, 200, 50))
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(14, 200, 14, 50), fill=(200, 255, 200, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(14, 255, 14, 50), fill=(15, 200, 15, 50))
 
                 with dpg.draw_node(tag="field_robot"):
@@ -773,7 +773,6 @@ def main():
     
     # Make all the windows to start with
     make_auto_selector()
-    # make_orientation()
     make_field_view()
     make_round_countdown()
     make_mode_indicator()
