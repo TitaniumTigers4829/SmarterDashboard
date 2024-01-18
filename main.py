@@ -18,6 +18,7 @@ open_widgets = {
     "orientation": None,
     "auto_selector": None,
     "mode_indicator": None,
+    "path_detection": None,
 }
 # Global variable to see if it's connected
 connection_status = False
@@ -390,6 +391,64 @@ def make_mode_indicator():
 
     dpg.bind_item_handler_registry("mode_indicator", "indicator_resize_handler")
 
+def make_path_detection():
+    global open_widgets, robot_odometry
+
+    if open_widgets["path_detection"] is not None:
+        dpg.delete_item(open_widgets["path_detection"])
+        dpg.delete_item(item="path_drawlist")
+        dpg.delete_item(item="path_resize_handler")
+
+    with dpg.window(label="Auto Path Detection", tag="path_detection", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as detection:
+        # Attach orientation to the global widgets
+        open_widgets["path_detection"] = detection
+        dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+65)))
+
+        with dpg.drawlist(width=100, height=100, tag="path_drawlist"):
+            with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
+                with dpg.draw_node(tag="path_detected", show=True):
+                    dpg.draw_circle(
+                        center=(0,0), 
+                        radius=25, 
+                        color=(144, 238, 144), 
+                        thickness=5, 
+                        fill=(144, 238, 144, 50)
+                        )
+
+                with dpg.draw_node(tag="path_not_detected", show=False):
+                    dpg.draw_circle(
+                        center=(0,0), 
+                        radius=25, 
+                        color=(186, 0, 0), 
+                        thickness=5, 
+                        fill=(186, 0, 0, 50)
+                        )
+
+            dpg.set_clip_space("path_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
+
+    def drawlist_resize(sender, appdata):
+        width, height = dpg.get_item_rect_size("path_detection")
+        width -= 2 * 8
+        height -= 5 * 8
+        dpg.configure_item("path_drawlist", width=width, height=height)
+
+        # Drawing space
+        drawing_size = min(width, height)
+        dpg.set_clip_space(
+            item="path_indicator_pass",
+            top_left_x=((width - drawing_size) // 2),
+            top_left_y=((height - drawing_size) // 2),
+            width=drawing_size,
+            height=drawing_size,
+            min_depth=-5.0,
+            max_depth=5.0
+        )
+    # Make all necessary connections for proper resizing
+    with dpg.item_handler_registry(tag="path_detection_resize_handler"):
+        dpg.add_item_resize_handler(callback=drawlist_resize)
+
+    dpg.bind_item_handler_registry("path_detection", "path_detection_resize_handler")
+
 # Makes the countdown
 def make_round_countdown():
     global open_widgets
@@ -690,6 +749,7 @@ def main():
             dpg.add_menu_item(label="Orientation", callback=make_orientation)
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
             dpg.add_menu_item(label="Mode Indicator", callback=make_mode_indicator)
+            dpg.add_menu_item(label="Path Detection", callback=make_path_detection)
         with dpg.menu(label="Override"):
             dpg.add_button(
                 label="Attempt Reconnect", 
@@ -717,6 +777,7 @@ def main():
     make_field_view()
     make_round_countdown()
     make_mode_indicator()
+    make_path_detection()
     make_orientation()
 
     # Setup
