@@ -137,21 +137,17 @@ def on_networktables_change(source, key, value, isNew):
             robot_odometry["field_x"] = value[0]
             robot_odometry["field_y"] = value[1]
         case "canShoot":
-            dpg.configure_item(item="can_shoot", show=(value == "Can Shoot"))
-            dpg.configure_item(item="can_not_shoot", show=(value == "Can Not Shoot"))
-        case "pathData":
-            dpg.configure_item(item="pathData[0]", show=(value == "Path Detected"))
-            dpg.configure_item(item="pathData[1]", show=(value == "Red or Blue"))
-            dpg.configure_item(item="pathData[2]", show=(value == "Speaker or Amp"))
-            if(value[0] == True):
-                if (value[1] == True) & (value[2] == True):
-                    draw_path(path_to_red_speaker)
-                elif(value[1] == True) & (value[2] == False ):
-                    draw_path(path_to_red_amp)
-                if (value[1] == False) & (value[2] == True):
-                    draw_path(path_to_blue_speaker)
-                elif(value[1] == False) & (value[2] == False ):
-                    draw_path(path_to_blue_amp)
+            dpg.configure_item(item="can_shoot", show=(value == "true"))
+            dpg.configure_item(item="can_shoot", show=(value == "false"))
+        case "pathData[0]":
+            dpg.configure_item(item="path_detected", show=(value == "true"))
+            dpg.configure_item(item="path_detected", show=(value == "false"))
+        case "pathData[1]":
+            dpg.configure_item(item="red_or_blue", show=(value == "red"))
+            dpg.configure_item(item="red_or_blue", show=(value == "blue"))
+        case "pathData[2]":
+            dpg.configure_item(item="speaker_or_amp", show=(value == "speaker"))
+            dpg.configure_item(item="speaker_or_amp", show=(value == "amp"))
         case "limelight_pose":
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
@@ -362,18 +358,16 @@ def make_mode_indicator():
 
         with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
             with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="can_shoot", show=True):
+                with dpg.draw_node(tag="can_shoot", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=(dpg.get_item_height(indicator)/4), 
                         color=(5, 255, 5), 
                         thickness=5, 
                         fill=(5, 94, 5, 50)
-                        )    
-                 
-
-
-                with dpg.draw_node(tag="can_not_shoot", show=False):
+                        )
+                    
+                with dpg.draw_node(tag="can_not_shoot", show=True):
                     dpg.draw_polygon(
                         points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
                         color=(186, 0, 0),
@@ -421,7 +415,7 @@ def make_path_detection():
 
         with dpg.drawlist(width=100, height=100, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="PathBeingFollowed", show=False):
+                with dpg.draw_node(tag="path_detected", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
@@ -430,7 +424,7 @@ def make_path_detection():
                         fill=(144, 238, 144, 10)
                         )
 
-                with dpg.draw_node(tag="PathNotBeingFollowed", show=True):
+                with dpg.draw_node(tag="path_not_detected", show=True):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
@@ -711,7 +705,16 @@ def draw_call_update():
         
         dpg.apply_transform("field_robot", field_scale*field_position*field_rotation)
         dpg.apply_transform("limelight_robot", limelight_scale*limelight_position*limelight_rotation)
-
+        
+        if("path_detected" == "true"):
+            if ("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
+                draw_path(path_to_red_speaker)
+            elif("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
+                draw_path(path_to_red_amp)
+            if ("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
+                draw_path(path_to_blue_speaker)
+            elif("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
+                draw_path(path_to_blue_amp)
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
     global table_instance, chooser_options
