@@ -46,6 +46,13 @@ blue_amp_cords = [2.5, 10, True, 90]
 red_speaker_coords = [15.25, 7.25, True, 0]
 blue_speaker_cords = [1.25, 7, True, 180]
 
+# waypoints for object avoidance
+blue_upper_waypoint = [700, 275]
+blue_middle_waypoint = [860, 375]
+blue_lower_waypoint = [700, 460]
+red_upper_waypoint = [365, 275]
+red_middle_waypoint = [200, 375]
+red_lower_waypoint = [365, 460]
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -486,6 +493,7 @@ def make_round_countdown():
 # Draws the path and all such points
 def draw_path(path_to_place):
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
+
     path_with_current_pos = np.stack((robot_pos, path_to_place))
     
     print(path_with_current_pos)
@@ -505,7 +513,6 @@ def draw_path(path_to_place):
                 thickness=5,
                 color=(155, 155, 255, 200)
             )
-
 
     with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
         for node in path_with_current_pos:
@@ -579,8 +586,8 @@ def make_field_view():
                 with dpg.draw_node(tag="field_robot", show=True):
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
-                    
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
+        dpg.draw_circle(center=(860, 375), radius=10, thickness=10,color=(255, 255, 255),fill=(255, 255, 255))
 
     # Make all necessary callback functions
     def drawlist_resize(sender, appdata):
@@ -774,6 +781,8 @@ def main():
     make_mode_indicator()
     make_path_detection()
     make_orientation()
+
+
     # Setup
     dpg.setup_dearpygui()
     dpg.show_viewport()
