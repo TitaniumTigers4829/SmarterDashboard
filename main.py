@@ -42,23 +42,23 @@ limelight_odometry = {
 # Current path
 
 path_to_red_amp = [
-    [13.75, 10, 0, 0],
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
+    [13.75, 10, 0, 90],
 ]
 
 path_to_blue_amp = [
-    [2.5, 10, 0, 0],
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
+    [2.5, 10, 0, 90],
 ]
 
 path_to_red_speaker = [
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
     [15.25, 7.25, 0, 0],
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
 ]
 
 path_to_blue_speaker = [
-    [1.25, 7, 0, 0],
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, 0],
+    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
+    [1.25, 7, 0, 180],
 ]
 
 # Fetch textures (should be a function)
@@ -518,7 +518,7 @@ def draw_path(path_to_place):
             )
 
     with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=False):
-        bezier_points = path_to_cubic_points(path_to_red_amp)
+        bezier_points = path_to_cubic_points(path_to_place)
         
         for i in range(int(len(bezier_points) / 4)):
             dpg.draw_circle(center=bezier_points[(i*4) + 1], radius=3, thickness=2)
@@ -527,7 +527,7 @@ def draw_path(path_to_place):
             dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
 
     with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
-        for node in path_to_red_amp:
+        for node in path_to_place:
             dpg.draw_circle(
                 center=field_to_canvas(*node[0:2]), 
                 radius=5, 
@@ -705,7 +705,7 @@ def draw_call_update():
         
         dpg.apply_transform("field_robot", field_scale*field_position*field_rotation)
         dpg.apply_transform("limelight_robot", limelight_scale*limelight_position*limelight_rotation)
-        
+
         if("path_detected" == "true"):
             if ("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
                 draw_path(path_to_red_speaker)
@@ -750,9 +750,7 @@ def connect_table_and_listeners(timeout=5):
     table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    global path_to_red_amp
-    path_to_red_amp = path_to_blue_amp.copy()
-    draw_path()
+    draw_path(path_to_blue_speaker)
 
 def main():
     # Create the menu bar
