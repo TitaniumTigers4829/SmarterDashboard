@@ -39,23 +39,25 @@ limelight_odometry = {
     "field_y": 4,
     "pitch": 0, # 2d rotation
 }
-# Current path
 
+# coordinates for red amp
 path_to_red_amp = [
     [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
     [13.75, 10, 0, 90],
 ]
-
+# coordinates for blue amp
 path_to_blue_amp = [
     [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
     [2.5, 10, 0, 90],
 ]
 
+# coordinates for red speaker
 path_to_red_speaker = [
     [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
     [15.25, 7.25, 0, 0],
 ]
 
+# coordinates for blue speaker
 path_to_blue_speaker = [
     [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
     [1.25, 7, 0, 180],
@@ -88,6 +90,7 @@ def field_to_canvas(x, y):
     normalized_x = (x / field_meters_width) - 0.5
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_x, normalized_y
+
 
 def path_to_cubic_points(path):
     points = []
@@ -188,8 +191,6 @@ def set_theme():
 
     dpg.bind_theme(global_theme)
 
-# Makes the grid view
- 
 # Makes the auto selector window
 def make_auto_selector():
     global open_widgets, chooser_options
@@ -218,7 +219,6 @@ def make_auto_selector():
         item="auto_selector",
         callback=auto_selector_callback
     )
-    
 
 # Makes the orientation window
 def make_orientation():
@@ -399,6 +399,7 @@ def make_mode_indicator():
         dpg.add_item_resize_handler(callback=drawlist_resize)
 
     dpg.bind_item_handler_registry("mode_indicator", "indicator_resize_handler")
+
 
 def make_path_detection():
     global open_widgets, robot_odometry
@@ -715,6 +716,7 @@ def draw_call_update():
                 draw_path(path_to_blue_speaker)
             elif("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
                 draw_path(path_to_blue_amp)
+
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
     global table_instance, chooser_options
