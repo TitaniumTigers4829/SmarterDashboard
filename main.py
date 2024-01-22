@@ -42,24 +42,24 @@ limelight_odometry = {
 
 # coordinates for red amp
 path_to_red_amp = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
+    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
     [13.75, 10, 0, 90],
 ]
 # coordinates for blue amp
 path_to_blue_amp = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
+    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
     [2.5, 10, 0, 90],
 ]
 
 # coordinates for red speaker
 path_to_red_speaker = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
+    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
     [15.25, 7.25, 0, 0],
 ]
 
 # coordinates for blue speaker
 path_to_blue_speaker = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]],
+    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
     [1.25, 7, 0, 180],
 ]
 
