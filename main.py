@@ -487,15 +487,16 @@ def make_round_countdown():
 def draw_path(path_to_place):
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
     path_with_current_pos = np.stack((robot_pos, path_to_place))
+    
     print(path_with_current_pos)
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_points")
-
+    
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         bezier_points = path_to_cubic_points(path_with_current_pos)
-        print(bezier_points)
-        for i in range(int(len(path_with_current_pos) / 4)):
+        
+        for i in range(int(len(bezier_points) / 4)):
             dpg.draw_bezier_cubic(
                 p1=bezier_points[(i*4) + 0],
                 p2=bezier_points[(i*4) + 1],
@@ -507,7 +508,7 @@ def draw_path(path_to_place):
 
 
     with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
-        for node in path_to_cubic_points(path_with_current_pos):
+        for node in path_with_current_pos:
             dpg.draw_circle(
                 center=field_to_canvas(*node[0:2]), 
                 radius=5, 
@@ -515,6 +516,7 @@ def draw_path(path_to_place):
                 color=(0, 0, 0),
                 fill=(255, 255, 255)
             )
+
 
 # Makes the field layout window
 def make_field_view():
@@ -731,7 +733,7 @@ def connect_table_and_listeners(timeout=5):
     table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    draw_path(red_amp_cords)
+    draw_path(blue_amp_cords)
 
 def main():
     # Create the menu bar
