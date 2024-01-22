@@ -40,28 +40,12 @@ limelight_odometry = {
     "pitch": 0, # 2d rotation
 }
 
-# coordinates for red amp
-path_to_red_amp = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [13.75, 10, 0, 90],
-]
-# coordinates for blue amp
-path_to_blue_amp = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [2.5, 10, 0, 90],
-]
+# coordinates for field places
+red_amp_cords = [13.75, 10, True, 90]
+blue_amp_cords = [2.5, 10, True, 90]
+red_speaker_coords = [15.25, 7.25, True, 0]
+blue_speaker_cords = [1.25, 7, True, 180]
 
-# coordinates for red speaker
-path_to_red_speaker = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [15.25, 7.25, 0, 0],
-]
-
-# coordinates for blue speaker
-path_to_blue_speaker = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [1.25, 7, 0, 180],
-]
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -501,14 +485,17 @@ def make_round_countdown():
 
 # Draws the path and all such points
 def draw_path(path_to_place):
+    robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
+    path_with_current_pos = np.stack((robot_pos, path_to_place))
+    print(path_with_current_pos)
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_points")
 
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
-        bezier_points = path_to_cubic_points(path_to_place)
-        
-        for i in range(int(len(bezier_points) / 4)):
+        bezier_points = path_to_cubic_points(path_with_current_pos)
+        print(bezier_points)
+        for i in range(int(len(path_with_current_pos) / 4)):
             dpg.draw_bezier_cubic(
                 p1=bezier_points[(i*4) + 0],
                 p2=bezier_points[(i*4) + 1],
@@ -518,17 +505,9 @@ def draw_path(path_to_place):
                 color=(155, 155, 255, 200)
             )
 
-    with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=False):
-        bezier_points = path_to_cubic_points(path_to_place)
-        
-        for i in range(int(len(bezier_points) / 4)):
-            dpg.draw_circle(center=bezier_points[(i*4) + 1], radius=3, thickness=2)
-            dpg.draw_circle(center=bezier_points[(i*4) + 2], radius=3, thickness=2)
-            dpg.draw_line(p1=bezier_points[(i*4)], p2=bezier_points[(i*4) + 1])
-            dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
 
     with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
-        for node in path_to_place:
+        for node in path_to_cubic_points(path_with_current_pos):
             dpg.draw_circle(
                 center=field_to_canvas(*node[0:2]), 
                 radius=5, 
@@ -560,7 +539,7 @@ def make_field_view():
         [0,  robot_height * 0.25],
     ]
 
-    global open_widgets, path_to_red_amp
+    global open_widgets, red_amp_cords
 
     if open_widgets["field_view"] is not None:
         dpg.delete_item(open_widgets["field_view"])
@@ -709,13 +688,13 @@ def draw_call_update():
 
         if("path_detected" == "true"):
             if ("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
-                draw_path(path_to_red_speaker)
+                draw_path(red_speaker_coords)
             elif("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
-                draw_path(path_to_red_amp)
+                draw_path(red_amp_cords)
             if ("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
-                draw_path(path_to_blue_speaker)
+                draw_path(blue_speaker_cords)
             elif("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
-                draw_path(path_to_blue_amp)
+                draw_path(blue_amp_cords)
 
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
@@ -752,7 +731,7 @@ def connect_table_and_listeners(timeout=5):
     table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    draw_path(path_to_blue_speaker)
+    draw_path(red_amp_cords)
 
 def main():
     # Create the menu bar
