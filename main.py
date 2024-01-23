@@ -47,12 +47,20 @@ red_speaker_coords = [15.25, 7.25, True, 0]
 blue_speaker_cords = [1.25, 7, True, 180]
 
 # waypoints for object avoidance
-blue_upper_waypoint = [700, 275]
-blue_middle_waypoint = [860, 375]
-blue_lower_waypoint = [700, 460]
-red_upper_waypoint = [365, 275]
-red_middle_waypoint = [200, 375]
-red_lower_waypoint = [365, 460]
+
+red_upper_waypoint_x = 690
+red_upper_waypoint_y = 265
+red_middle_waypoint_x = 877
+red_middle_waypoint_y = 372
+red_lower_waypoint_x = 690
+red_lower_waypoint_y = 478
+
+blue_upper_waypoint_x = 375
+blue_upper_waypoint_y = 265
+blue_middle_waypoint_x = 190
+blue_middle_waypoint_y = 372
+blue_lower_waypoint_x = 375
+blue_lower_waypoint_y = 475 
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -587,7 +595,8 @@ def make_field_view():
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
-        dpg.draw_circle(center=(860, 375), radius=10, thickness=10,color=(255, 255, 255),fill=(255, 255, 255))
+        dpg.draw_triangle((blue_middle_waypoint_x, blue_middle_waypoint_y), (blue_upper_waypoint_x, blue_upper_waypoint_y),(blue_lower_waypoint_x, blue_lower_waypoint_y), tag="blue_stage", thickness=2, color=(255, 255, 255))
+        dpg.draw_triangle((red_middle_waypoint_x, red_middle_waypoint_y), (red_upper_waypoint_x, red_upper_waypoint_y),(red_lower_waypoint_x, red_lower_waypoint_y), tag="red_stage", thickness=2, color=(255, 255, 255))
 
     # Make all necessary callback functions
     def drawlist_resize(sender, appdata):
