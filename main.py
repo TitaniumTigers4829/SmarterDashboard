@@ -2,6 +2,7 @@ from networktables.util import ChooserControl
 from networktables import NetworkTables
 from networktables import NetworkTablesInstance
 import dearpygui.dearpygui as dpg
+from shapely import Point, Polygon, overlaps, LineString
 import numpy as np
 import threading
 import logging
@@ -43,7 +44,7 @@ limelight_odometry = {
 # coordinates for field places
 red_amp_cords = [13.75, 10, True, 90]
 blue_amp_cords = [2.5, 10, True, 90]
-red_speaker_coords = [15.25, 7.25, True, 0]
+red_speaker_cords = [15.25, 7.25, True, 0]
 blue_speaker_cords = [1.25, 7, True, 180]
 
 # waypoints for object avoidance
@@ -62,6 +63,8 @@ blue_middle_waypoint_y = 372
 blue_lower_waypoint_x = 375
 blue_lower_waypoint_y = 475 
 
+blue_stage_triangle = Polygon([(blue_upper_waypoint_x, blue_upper_waypoint_y), (blue_lower_waypoint_x, blue_lower_waypoint_y), (blue_middle_waypoint_x, blue_middle_waypoint_y)])
+red_stage_triangle = Polygon([(red_upper_waypoint_x, red_upper_waypoint_y), (red_lower_waypoint_x, red_lower_waypoint_y), (red_middle_waypoint_x, red_middle_waypoint_y)])
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
 field_width, field_height, field_channels, field_data = dpg.load_image('GUI/field24.png') # 0: width, 1: height, 2: channels, 3: data
@@ -91,12 +94,12 @@ def field_to_canvas(x, y):
     return normalized_x, normalized_y
 
 
-def path_to_cubic_points(path):
+def path_to_cubic_points(path, curvieness):
     points = []
     for i in range(len(path) - 1):
-        start = field_to_canvas(*path[i][0:2])
-        end = field_to_canvas(*path[i+1][0:2])
-        handle_length = np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / 3
+        start = path[i][0:2]
+        end = path[i+1][0:2]
+        handle_length = np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / curvieness
         start_handle = [
             start[0] + np.cos(np.deg2rad(path[i][3])) * handle_length, 
             start[1] + np.sin(np.deg2rad(path[i][3])) * handle_length
@@ -504,23 +507,57 @@ def draw_path(path_to_place):
 
     path_with_current_pos = np.stack((robot_pos, path_to_place))
     
-    print(path_with_current_pos)
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_points")
-    
+    bezier_points = path_to_cubic_points(path_with_current_pos, 3)
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
-        bezier_points = path_to_cubic_points(path_with_current_pos)
         
         for i in range(int(len(bezier_points) / 4)):
             dpg.draw_bezier_cubic(
-                p1=bezier_points[(i*4) + 0],
-                p2=bezier_points[(i*4) + 1],
-                p3=bezier_points[(i*4) + 2],
-                p4=bezier_points[(i*4) + 3],
+                p1=field_to_canvas(bezier_points[(i*4) + 0][0], bezier_points[(i*4) + 0][1]),
+                p2=field_to_canvas(bezier_points[(i*4) + 1][0], bezier_points[(i*4) + 1][1]),
+                p3=field_to_canvas(bezier_points[(i*4) + 2][0], bezier_points[(i*4) + 2][1]),
+                p4=field_to_canvas(bezier_points[(i*4) + 3][0], bezier_points[(i*4) + 3][1]),
                 thickness=5,
                 color=(155, 155, 255, 200)
             )
+            print((bezier_points[(i*4) + 0][0], bezier_points[(i*4) + 0][1]))
+
+
+            
+  
+    with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=True):
+        
+        for i in range(int(len(bezier_points) / 4)):
+            dpg.draw_circle(center=field_to_canvas(bezier_points[(i*4) + 1][0], bezier_points[(i*4) + 1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+            dpg.draw_circle(center=field_to_canvas(bezier_points[(i*4) + 2][0], bezier_points[(i*4) + 2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+0][0], bezier_points[(i*4)+0][1]), p2=field_to_canvas(bezier_points[(i*4)+1][0], bezier_points[(i*4)+1][1]), thickness=3, label="bezier_stuff")
+            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+0][0], bezier_points[(i*4)+0][1]), p2=field_to_canvas(bezier_points[(i*4)+3][0], bezier_points[(i*4)+3][1]), thickness=3, label="bezier_stuff")
+            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+1][0], bezier_points[(i*4)+1][1]), p2=field_to_canvas(bezier_points[(i*4)+2][0], bezier_points[(i*4)+2][1]), thickness=3, label="bezier_stuff")
+            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+2][0], bezier_points[(i*4)+2][1]), p2=field_to_canvas(bezier_points[(i*4)+3][0], bezier_points[(i*4)+3][1]), thickness=3, label="bezier_stuff")
+      
+        path1 = LineString([[bezier_points[0][0], bezier_points[0][1]], [bezier_points[1][0], bezier_points[1][1]]])
+        path2 = LineString([[bezier_points[0][0], bezier_points[0][1]], [bezier_points[2][0], bezier_points[2][1]]])
+        path3 = LineString([[bezier_points[0][0], bezier_points[0][1]], [bezier_points[3][0], bezier_points[3][1]]])
+        path4 = LineString([[bezier_points[3][0], bezier_points[3][1]], [bezier_points[1][0], bezier_points[1][1]]])
+        path5 = LineString([[bezier_points[3][0], bezier_points[3][1]], [bezier_points[2][0], bezier_points[2][1]]])
+        path6 = LineString([[bezier_points[2][0], bezier_points[2][1]], [bezier_points[1][0], bezier_points[1][1]]])
+        if red_stage_triangle.intersects(path1) == True:
+            print('it looks like its working')
+        elif red_stage_triangle.intersects(path2) == True:
+            print("it looks like its working")
+        elif red_stage_triangle.intersects(path3) == True:
+            print("it looks like its working")
+        elif red_stage_triangle.intersects(path4) == True:
+            print("it looks like its working")
+        elif red_stage_triangle.intersects(path5) == True:
+            print("it looks like its working")
+        elif red_stage_triangle.intersects(path6) == True:
+            print("it looks like its working")
+        else:
+            print("Something isn't working, keep trying stuff lol")
+
 
     with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
         for node in path_with_current_pos:
@@ -528,9 +565,11 @@ def draw_path(path_to_place):
                 center=field_to_canvas(*node[0:2]), 
                 radius=5, 
                 thickness=4,
-                color=(0, 0, 0),
+                color=(255, 255, 255),
                 fill=(255, 255, 255)
-            )
+            )            
+
+    
 
 
 # Makes the field layout window
@@ -595,9 +634,9 @@ def make_field_view():
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
-        dpg.draw_triangle((blue_middle_waypoint_x, blue_middle_waypoint_y), (blue_upper_waypoint_x, blue_upper_waypoint_y),(blue_lower_waypoint_x, blue_lower_waypoint_y), tag="blue_stage", thickness=2, color=(255, 255, 255))
-        dpg.draw_triangle((red_middle_waypoint_x, red_middle_waypoint_y), (red_upper_waypoint_x, red_upper_waypoint_y),(red_lower_waypoint_x, red_lower_waypoint_y), tag="red_stage", thickness=2, color=(255, 255, 255))
-
+            dpg.draw_triangle((blue_middle_waypoint_x, blue_middle_waypoint_y), (blue_upper_waypoint_x, blue_upper_waypoint_y),(blue_lower_waypoint_x, blue_lower_waypoint_y), tag="blue_stage", thickness=2, color=(255, 255, 255))
+            dpg.draw_triangle((red_middle_waypoint_x, red_middle_waypoint_y), (red_upper_waypoint_x, red_upper_waypoint_y),(red_lower_waypoint_x, red_lower_waypoint_y), tag="red_stage", thickness=2, color=(255, 255, 255))
+  
     # Make all necessary callback functions
     def drawlist_resize(sender, appdata):
         width, height = dpg.get_item_rect_size("field_view")
@@ -665,6 +704,7 @@ def make_field_view():
 
     dpg.bind_item_handler_registry("field_view", "field_resize_handler")
 
+
 # Update for whenever the frame is drawn
 def draw_call_update():
     global robot_odometry
@@ -706,7 +746,7 @@ def draw_call_update():
 
         if("path_detected" == "true"):
             if ("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
-                draw_path(red_speaker_coords)
+                draw_path(red_speaker_cords)
             elif("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
                 draw_path(red_amp_cords)
             if ("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
