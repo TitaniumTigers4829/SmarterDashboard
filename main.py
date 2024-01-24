@@ -49,22 +49,21 @@ blue_speaker_cords = [1.25, 7, True, 180]
 
 # waypoints for object avoidance
 
-red_upper_waypoint_x = 690
-red_upper_waypoint_y = 265
-red_middle_waypoint_x = 877
-red_middle_waypoint_y = 372
-red_lower_waypoint_x = 690
-red_lower_waypoint_y = 478
+red_upper_waypoint_x = 5.869
+red_upper_waypoint_y = 2.71
+red_middle_waypoint_x = 3.447
+red_middle_waypoint_y = 4.232
+red_lower_waypoint_x = 5.869
+red_lower_waypoint_y = 5.534
 
-blue_upper_waypoint_x = 375
-blue_upper_waypoint_y = 265
-blue_middle_waypoint_x = 190
-blue_middle_waypoint_y = 372
-blue_lower_waypoint_x = 375
-blue_lower_waypoint_y = 475 
+blue_upper_waypoint_x = 10.813
+blue_upper_waypoint_y = 2.71
+blue_middle_waypoint_x = 13.511
+blue_middle_waypoint_y = 4.232
+blue_lower_waypoint_x = 10.813
+blue_lower_waypoint_y = 5.534
 
-blue_stage_triangle = Polygon([(blue_upper_waypoint_x, blue_upper_waypoint_y), (blue_lower_waypoint_x, blue_lower_waypoint_y), (blue_middle_waypoint_x, blue_middle_waypoint_y)])
-red_stage_triangle = Polygon([(red_upper_waypoint_x, red_upper_waypoint_y), (red_lower_waypoint_x, red_lower_waypoint_y), (red_middle_waypoint_x, red_middle_waypoint_y)])
+
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
 field_width, field_height, field_channels, field_data = dpg.load_image('GUI/field24.png') # 0: width, 1: height, 2: channels, 3: data
@@ -92,6 +91,9 @@ def field_to_canvas(x, y):
     normalized_x = (x / field_meters_width) - 0.5
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_x, normalized_y
+
+blue_stage_triangle = Polygon([(field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[0], field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[1]), (field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[0], field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[1]), (field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[0], field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[1])])
+red_stage_triangle = Polygon([(red_upper_waypoint_x, red_upper_waypoint_y), (red_lower_waypoint_x, red_lower_waypoint_y), (red_middle_waypoint_x, red_middle_waypoint_y)])
 
 
 def path_to_cubic_points(path, curvieness):
@@ -523,7 +525,7 @@ def draw_path(path_to_place):
                 color=(155, 155, 255, 200)
             )
             print((bezier_points[(i*4) + 0][0], bezier_points[(i*4) + 0][1]))
-
+            print(blue_stage_triangle)
 
             
   
@@ -533,7 +535,7 @@ def draw_path(path_to_place):
             dpg.draw_circle(center=field_to_canvas(bezier_points[(i*4) + 1][0], bezier_points[(i*4) + 1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
             dpg.draw_circle(center=field_to_canvas(bezier_points[(i*4) + 2][0], bezier_points[(i*4) + 2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
             dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+0][0], bezier_points[(i*4)+0][1]), p2=field_to_canvas(bezier_points[(i*4)+1][0], bezier_points[(i*4)+1][1]), thickness=3, label="bezier_stuff")
-            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+0][0], bezier_points[(i*4)+0][1]), p2=field_to_canvas(bezier_points[(i*4)+3][0], bezier_points[(i*4)+3][1]), thickness=3, label="bezier_stuff")
+            # dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+0][0], bezier_points[(i*4)+0][1]), p2=field_to_canvas(bezier_points[(i*4)+3][0], bezier_points[(i*4)+3][1]), thickness=3, label="bezier_stuff")
             dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+1][0], bezier_points[(i*4)+1][1]), p2=field_to_canvas(bezier_points[(i*4)+2][0], bezier_points[(i*4)+2][1]), thickness=3, label="bezier_stuff")
             dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+2][0], bezier_points[(i*4)+2][1]), p2=field_to_canvas(bezier_points[(i*4)+3][0], bezier_points[(i*4)+3][1]), thickness=3, label="bezier_stuff")
       
@@ -557,6 +559,7 @@ def draw_path(path_to_place):
             print("it looks like its working")
         else:
             print("Something isn't working, keep trying stuff lol")
+            print(path1)
 
 
     with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
