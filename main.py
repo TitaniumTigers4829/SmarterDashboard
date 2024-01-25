@@ -562,11 +562,15 @@ def draw_path(path_to_place):
     bezier_points = []
     for i in range(len(cubic_points)):
          bezier_points.append(cubic_points[i-1])
-
     xvals, yvals = bezier_curve(cubic_points, nTimes=100)
 
     points_on_curve = np.stack([xvals, yvals], axis=1)
-
+    # print(points_on_curve)
+    points_for_testing_path_validity = sp.points(xvals, yvals)
+    for i in range(len(points_for_testing_path_validity)):
+        if(blue_stage_triangle.contains(points_for_testing_path_validity[i]) == True):
+            print("woah thats crazy")
+        print(i)
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_bezier_points")
