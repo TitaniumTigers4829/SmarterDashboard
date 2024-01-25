@@ -2,7 +2,9 @@ from networktables.util import ChooserControl
 from networktables import NetworkTables
 from networktables import NetworkTablesInstance
 import dearpygui.dearpygui as dpg
+import shapely as sp
 import numpy as np
+from scipy.special import comb
 import threading
 import logging
 import time
@@ -40,28 +42,27 @@ limelight_odometry = {
     "pitch": 0, # 2d rotation
 }
 
-# coordinates for red amp
-path_to_red_amp = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [13.75, 10, 0, 90],
-]
-# coordinates for blue amp
-path_to_blue_amp = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [2.5, 10, 0, 90],
-]
+# coordinates for field places
+red_amp_cords = [13.75, 10, True, 90]
+blue_amp_cords = [2.5, 10, True, 90]
+red_speaker_cords = [15.25, 7.25, True, 0]
+blue_speaker_cords = [1.25, 7, True, 180]
 
-# coordinates for red speaker
-path_to_red_speaker = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [15.25, 7.25, 0, 0],
-]
+# waypoints for object avoidance
+red_upper_waypoint_x = 5.869
+red_upper_waypoint_y = 2.71
+red_middle_waypoint_x = 3.447
+red_middle_waypoint_y = 4.232
+red_lower_waypoint_x = 5.869
+red_lower_waypoint_y = 5.534
 
-# coordinates for blue speaker
-path_to_blue_speaker = [
-    [robot_odometry["field_x"], robot_odometry["field_y"], True, robot_odometry["yaw"]],
-    [1.25, 7, 0, 180],
-]
+blue_upper_waypoint_x = 10.813
+blue_upper_waypoint_y = 2.71
+blue_middle_waypoint_x = 13.511
+blue_middle_waypoint_y = 4.232
+blue_lower_waypoint_x = 10.813
+blue_lower_waypoint_y = 5.534
+
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -91,13 +92,36 @@ def field_to_canvas(x, y):
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_x, normalized_y
 
+def field_x_to_canvas_x(x):
+    field_meters_width = 16.54175
+    normalized_x = (x / field_meters_width) - 0.5
+    return normalized_x
 
-def path_to_cubic_points(path):
+def field_y_to_canvas_y(y):
+    field_meters_height = 8.0137 
+    normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
+    return normalized_y
+
+blue_stage_triangle = sp.Polygon([(field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[0], 
+                                field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[1]), 
+                               (field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[0], 
+                                field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[1]), 
+                               (field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[0], 
+                                field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[1])])
+
+red_stage_triangle = sp.Polygon([(field_to_canvas(red_upper_waypoint_x, red_upper_waypoint_y)[0], 
+                                field_to_canvas(red_upper_waypoint_x, red_upper_waypoint_y)[1]), 
+                               (field_to_canvas(red_lower_waypoint_x, red_lower_waypoint_y)[0], 
+                                field_to_canvas(red_lower_waypoint_x, red_lower_waypoint_y)[1]), 
+                               (field_to_canvas(red_middle_waypoint_x, red_middle_waypoint_y)[0], 
+                                field_to_canvas(red_middle_waypoint_x, red_middle_waypoint_y)[1])])
+
+def path_to_cubic_points(path, curvieness):
     points = []
     for i in range(len(path) - 1):
-        start = field_to_canvas(*path[i][0:2])
-        end = field_to_canvas(*path[i+1][0:2])
-        handle_length = np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / 3
+        start = path[i][0:2]
+        end = path[i+1][0:2]
+        handle_length = np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / curvieness
         start_handle = [
             start[0] + np.cos(np.deg2rad(path[i][3])) * handle_length, 
             start[1] + np.sin(np.deg2rad(path[i][3])) * handle_length
@@ -107,9 +131,35 @@ def path_to_cubic_points(path):
             end[1] - np.sin(np.deg2rad(path[i+1][3])) * handle_length
         ]
 
-        points.extend([start, start_handle, end_handle, end])
-
+    points = [[start[0], start[1]],
+              [start_handle[0], start_handle[1]],
+              [end_handle[0], end_handle[1]],
+              [end[0], end[1]]
+              ]
     return points
+
+#bernstein polynomial of n, i as a function of t
+def bernstein_poly(i, n, t):
+
+    return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
+
+# returns a rough list of points along the bezier curve
+def bezier_curve(points, nTimes=1):
+
+    nPoints = len(points)
+    xPoints = np.array([p[0] for p in points])
+    yPoints = np.array([p[1] for p in points])
+
+    t = np.linspace(0.0, 1.0, nTimes)
+
+    polynomial_array = np.array([ bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)   ])
+
+    xvals = np.dot(xPoints, polynomial_array)
+    yvals = np.dot(yPoints, polynomial_array)
+
+    return xvals, yvals
+
+
 
 # God function for networktables callbacks
 def on_networktables_change(source, key, value, isNew):
@@ -501,41 +551,43 @@ def make_round_countdown():
 
 # Draws the path and all such points
 def draw_path(path_to_place):
+    path = [[field_x_to_canvas_x(path_to_place[0]), field_y_to_canvas_y(path_to_place[0])],
+            [field_x_to_canvas_x(path_to_place[1]), field_y_to_canvas_y(path_to_place[1])],
+            [field_x_to_canvas_x(path_to_place[2]), field_y_to_canvas_y(path_to_place[2])],
+            [field_x_to_canvas_x(path_to_place[3]), field_y_to_canvas_y(path_to_place[3])],
+    ]
+    robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
+
+    path_with_current_pos = np.stack((robot_pos, path_to_place))
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
-    dpg.delete_item(item="robot_points")
+    dpg.delete_item(item="robot_bezier_points")
+
+    cubic_points = path_to_cubic_points(path_with_current_pos, 3)
+    bezier_points = []
+    for i in range(len(cubic_points)):
+         bezier_points.append(cubic_points[i-1])
+    print(bezier_points[1])
+    # print(x_values, y_values)
+    xvals, yvals = bezier_curve(cubic_points, nTimes=100)
+    points_on_curve = np.stack([xvals, yvals], axis=1)
+
 
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
-        bezier_points = path_to_cubic_points(path_to_place)
-        
-        for i in range(int(len(bezier_points) / 4)):
-            dpg.draw_bezier_cubic(
-                p1=bezier_points[(i*4) + 0],
-                p2=bezier_points[(i*4) + 1],
-                p3=bezier_points[(i*4) + 2],
-                p4=bezier_points[(i*4) + 3],
-                thickness=5,
-                color=(155, 155, 255, 200)
-            )
+        for i in range(len(points_on_curve)):
+            dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
 
-    with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=False):
-        bezier_points = path_to_cubic_points(path_to_place)
+  
+    with dpg.draw_node(tag="robot_bezier_points", parent="field_robot_pass", show=True):
         
-        for i in range(int(len(bezier_points) / 4)):
-            dpg.draw_circle(center=bezier_points[(i*4) + 1], radius=3, thickness=2)
-            dpg.draw_circle(center=bezier_points[(i*4) + 2], radius=3, thickness=2)
-            dpg.draw_line(p1=bezier_points[(i*4)], p2=bezier_points[(i*4) + 1])
-            dpg.draw_line(p1=bezier_points[(i*4) + 3], p2=bezier_points[(i*4) + 2])
+        dpg.draw_circle(center=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_line(p1=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), p2=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+        dpg.draw_line(p1=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), p2=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+        dpg.draw_line(p1=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), p2=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
 
-    with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
-        for node in path_to_place:
-            dpg.draw_circle(
-                center=field_to_canvas(*node[0:2]), 
-                radius=5, 
-                thickness=4,
-                color=(0, 0, 0),
-                fill=(255, 255, 255)
-            )
 
 # Makes the field layout window
 def make_field_view():
@@ -752,7 +804,7 @@ def connect_table_and_listeners(timeout=5):
     table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    draw_path(path_to_blue_speaker)
+    draw_path(blue_speaker_cords)
 
 def main():
     # Create the menu bar
