@@ -551,27 +551,25 @@ def make_round_countdown():
 
 # Draws the path and all such points
 def draw_path(path_to_place):
-    path = [[field_x_to_canvas_x(path_to_place[0]), field_y_to_canvas_y(path_to_place[0])],
-            [field_x_to_canvas_x(path_to_place[1]), field_y_to_canvas_y(path_to_place[1])],
-            [field_x_to_canvas_x(path_to_place[2]), field_y_to_canvas_y(path_to_place[2])],
-            [field_x_to_canvas_x(path_to_place[3]), field_y_to_canvas_y(path_to_place[3])],
-    ]
+
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
 
     path_with_current_pos = np.stack((robot_pos, path_to_place))
-    dpg.delete_item(item="robot_path")
-    dpg.delete_item(item="robot_handles")
-    dpg.delete_item(item="robot_bezier_points")
 
     cubic_points = path_to_cubic_points(path_with_current_pos, 3)
+
+
     bezier_points = []
     for i in range(len(cubic_points)):
          bezier_points.append(cubic_points[i-1])
-    print(bezier_points[1])
-    # print(x_values, y_values)
+
     xvals, yvals = bezier_curve(cubic_points, nTimes=100)
+
     points_on_curve = np.stack([xvals, yvals], axis=1)
 
+    dpg.delete_item(item="robot_path")
+    dpg.delete_item(item="robot_handles")
+    dpg.delete_item(item="robot_bezier_points")
 
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         for i in range(len(points_on_curve)):
@@ -761,13 +759,13 @@ def draw_call_update():
 
         if("path_detected" == "true"):
             if ("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
-                draw_path(path_to_red_speaker)
+                draw_path(red_speaker_cords)
             elif("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
-                draw_path(path_to_red_amp)
+                draw_path(red_amp_cords)
             if ("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
-                draw_path(path_to_blue_speaker)
+                draw_path(blue_speaker_cords)
             elif("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
-                draw_path(path_to_blue_amp)
+                draw_path(blue_amp_cords)
 
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
