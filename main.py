@@ -1,9 +1,11 @@
+
 from networktables.util import ChooserControl
 from networktables import NetworkTables
 from networktables import NetworkTablesInstance
 import dearpygui.dearpygui as dpg
-from shapely import Point, Polygon, overlaps, LineString
+import shapely as sp
 import numpy as np
+from scipy.special import comb
 import threading
 import logging
 import time
@@ -91,10 +93,29 @@ def field_to_canvas(x, y):
     normalized_x = (x / field_meters_width) - 0.5
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_x, normalized_y
+def field_x_to_canvas_x(x):
+    field_meters_width = 16.54175
+    normalized_x = (x / field_meters_width) - 0.5
+    return normalized_x
 
-blue_stage_triangle = Polygon([(field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[0], field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[1]), (field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[0], field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[1]), (field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[0], field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[1])])
-red_stage_triangle = Polygon([(red_upper_waypoint_x, red_upper_waypoint_y), (red_lower_waypoint_x, red_lower_waypoint_y), (red_middle_waypoint_x, red_middle_waypoint_y)])
+def field_y_to_canvas_y(y):
+    field_meters_height = 8.0137 
+    normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
+    return normalized_y
 
+blue_stage_triangle = sp.Polygon([(field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[0], 
+                                field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[1]), 
+                               (field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[0], 
+                                field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[1]), 
+                               (field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[0], 
+                                field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[1])])
+
+red_stage_triangle = sp.Polygon([(field_to_canvas(red_upper_waypoint_x, red_upper_waypoint_y)[0], 
+                                field_to_canvas(red_upper_waypoint_x, red_upper_waypoint_y)[1]), 
+                               (field_to_canvas(red_lower_waypoint_x, red_lower_waypoint_y)[0], 
+                                field_to_canvas(red_lower_waypoint_x, red_lower_waypoint_y)[1]), 
+                               (field_to_canvas(red_middle_waypoint_x, red_middle_waypoint_y)[0], 
+                                field_to_canvas(red_middle_waypoint_x, red_middle_waypoint_y)[1])])
 
 def path_to_cubic_points(path, curvieness):
     points = []
@@ -111,9 +132,35 @@ def path_to_cubic_points(path, curvieness):
             end[1] - np.sin(np.deg2rad(path[i+1][3])) * handle_length
         ]
 
-        points.extend([start, start_handle, end_handle, end])
-
+    points = [[start[0], start[1]],
+              [start_handle[0], start_handle[1]],
+              [end_handle[0], end_handle[1]],
+              [end[0], end[1]]
+              ]
     return points
+
+#bernstein polynomial of n, i as a function of t
+def bernstein_poly(i, n, t):
+
+    return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
+
+# returns a rough list of points along the bezier curve
+def bezier_curve(points, nTimes=1):
+
+    nPoints = len(points)
+    xPoints = np.array([p[0] for p in points])
+    yPoints = np.array([p[1] for p in points])
+
+    t = np.linspace(0.0, 1.0, nTimes)
+
+    polynomial_array = np.array([ bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)   ])
+
+    xvals = np.dot(xPoints, polynomial_array)
+    yvals = np.dot(yPoints, polynomial_array)
+
+    return xvals, yvals
+
+
 
 # God function for networktables callbacks
 def on_networktables_change(source, key, value, isNew):
@@ -195,382 +242,47 @@ def set_theme():
 
     dpg.bind_theme(global_theme)
 
-# Makes the auto selector window
-def make_auto_selector():
-    global open_widgets, chooser_options
-
-    def auto_selector_callback(item):
-        control = ChooserControl("SendableChooser[0]", inst=NetworkTablesInstance.getDefault())
-        control.setSelected(dpg.get_value(item=item))
-
-    if open_widgets["auto_selector"] is not None:
-        dpg.delete_item(open_widgets["auto_selector"])
-
-    with dpg.window(label="Auto Path Selector", no_collapse=True, no_scrollbar=True, width=200, height=100) as auto_selector:
-        # Attach auto selector to global widgets
-
-        open_widgets["auto_selector"] = auto_selector
-        dpg.add_combo(tag="auto_selector", items=chooser_options, width=-10)
-
-        dpg.set_item_pos(auto_selector, (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector)+20),dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+380)))
-
-        # Add items
-        dpg.add_text(default_value="Select Auto Path")
-
-
-    # Attach necessary callbacks
-    dpg.set_item_callback(
-        item="auto_selector",
-        callback=auto_selector_callback
-    )
-
-# Makes the orientation window
-def make_orientation():
-    grid_size = 8
-    grid_ticks = 4
-
-    axis_length = 8
-
-    width = 4
-    length = 4
-    height = 1
-    robot_vertices = [
-        # Shape
-        [-width, -length, -height],
-        [width, -length, -height],
-        [-width, length, -height],
-        [width, length, -height],
-        [-width, -length, height],
-        [width, -length, height],
-        [-width, length, height],
-        [width, length, height],
-        # Arrow
-        [-width, 0, 0],
-        [width, 0, 0]
-    ]
-
-    global open_widgets, robot_odometry
-    if open_widgets["orientation"] is not None:
-        dpg.delete_item(open_widgets["orientation"])
-        dpg.delete_item(item="orientation_drawlist")
-        dpg.delete_item(item="orientation_resize_handler")
-
-    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=300) as orientation:
-        # Attach orientation to the global widgets
-        open_widgets["orientation"] = orientation
-        dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+20),0))
-
-        # Make the window menu
-        with dpg.menu_bar(label="Orientation Menu", tag="orientation_menu"):
-            with dpg.menu(label="Settings"):
-                dpg.add_checkbox(label="Show Grid", tag="s_show_grid", default_value=True)
-                dpg.add_checkbox(label="Show Axis", tag="s_show_axis", default_value=True)
-
-        # Create Items
-        with dpg.group(horizontal=True):
-            dpg.add_text(tag="orientation_pitch_text", default_value=f"Pitch: {robot_odometry['pitch']} deg".rjust(18))
-            dpg.add_progress_bar(tag="orientation_pitch_bar", label="Pitch", width=-1, default_value=robot_odometry['pitch']/360)
-        with dpg.group(horizontal=True):
-            dpg.add_text(tag="orientation_roll_text", default_value=f"Roll: {robot_odometry['roll']} deg".rjust(18))
-            dpg.add_progress_bar(tag="orientation_roll_bar", label="Roll", width=-1, default_value=robot_odometry['roll']/360)
-        with dpg.group(horizontal=True):
-            dpg.add_text(tag="orientation_yaw_text", default_value=f"Yaw: {robot_odometry['yaw']} deg".rjust(18))
-            dpg.add_progress_bar(tag="orientation_yaw_bar", label="Yaw", width=-1, default_value=robot_odometry['yaw']/360)
-
-        with dpg.drawlist(width=100, height=100, tag="orientation_drawlist"):
-            with dpg.draw_layer(tag="robot_3d_pass", depth_clipping=False, perspective_divide=True):
-
-                with dpg.draw_node(tag="grid_3d"):
-                    for i in range(-grid_ticks, grid_ticks + 1):
-                        step = i * (grid_size / grid_ticks)
-                        dpg.draw_line([step, -grid_size, 0], [step, grid_size, 0], thickness=1, color=(255, 255, 255, 50))
-                        dpg.draw_line([-grid_size, step, 0], [grid_size, step, 0], thickness=1, color=(255, 255, 255, 50))
-                
-                with dpg.draw_node(tag="axis_3d"):
-                    dpg.draw_line([axis_length, 0, 0], [0, 0, 0], color=(255, 0, 0, 50), thickness=3)
-                    dpg.draw_line([0, axis_length, 0], [0, 0, 0], color=(0, 255, 0, 50), thickness=3)
-                    dpg.draw_line([0, 0, axis_length], [0, 0, 0], color=(0, 0, 255, 50), thickness=3)
-
-                with dpg.draw_node(tag="robot_3d"):
-                    # Bottom face
-                    dpg.draw_line(robot_vertices[0], robot_vertices[1], thickness=2)
-                    dpg.draw_line(robot_vertices[0], robot_vertices[2], thickness=2)
-                    dpg.draw_line(robot_vertices[1], robot_vertices[3], thickness=2)
-                    dpg.draw_line(robot_vertices[2], robot_vertices[3], thickness=2)
-                    # Arrow to how which way is forward
-                    dpg.draw_arrow(robot_vertices[9], robot_vertices[8], thickness=2, size=2, color=(255, 100, 0, 255))
-                    # Connecting lines
-                    dpg.draw_line(robot_vertices[0], robot_vertices[4], thickness=2)
-                    dpg.draw_line(robot_vertices[1], robot_vertices[5], thickness=2)
-                    dpg.draw_line(robot_vertices[2], robot_vertices[6], thickness=2)
-                    dpg.draw_line(robot_vertices[3], robot_vertices[7], thickness=2)
-                    # Top face
-                    dpg.draw_line(robot_vertices[4], robot_vertices[5], thickness=2)
-                    dpg.draw_line(robot_vertices[4], robot_vertices[6], thickness=2)
-                    dpg.draw_line(robot_vertices[5], robot_vertices[7], thickness=2)
-                    dpg.draw_line(robot_vertices[6], robot_vertices[7], thickness=2)
-        
-        dpg.set_clip_space("robot_3d_pass", 0, 0, 100, 100, -5.0, 5.0)
-        
-        # Make all necessary callback functions
-        def drawlist_resize(sender, appdata):
-            width, height = dpg.get_item_rect_size("orientation")
-            width -= 2 * 8
-            height -= 14 * 8
-            dpg.configure_item("orientation_drawlist", width=width, height=height)
-
-            # Drawing space
-            drawing_size = min(width, height)
-            dpg.set_clip_space(
-                item="robot_3d_pass", 
-                top_left_x=((width - drawing_size) // 2), 
-                top_left_y=((height - drawing_size) // 2), 
-                width=drawing_size, 
-                height=drawing_size,
-                min_depth=-5.0,
-                max_depth=5.0
-            )
-
-        dpg.set_item_callback(
-            "s_show_grid", 
-            callback=lambda x: dpg.configure_item("grid_3d", show=dpg.get_value(x))
-        )
-        dpg.set_item_callback(
-            "s_show_axis", 
-            callback=lambda x: dpg.configure_item("axis_3d", show=dpg.get_value(x))
-        )
-
-        # Make all necessary connections for proper resizing
-        with dpg.item_handler_registry(tag="orientation_resize_handler"):
-            dpg.add_item_resize_handler(callback=drawlist_resize)
-
-        dpg.bind_item_handler_registry("orientation", "orientation_resize_handler")
-
-# Makes the mode indicator
-def make_mode_indicator():
-    global open_widgets, robot_odometry
-
-    if open_widgets["mode_indicator"] is not None:
-        dpg.delete_item(open_widgets["mode_indicator"])
-        dpg.delete_item(item="indicator_drawlist")
-        dpg.delete_item(item="indicator_resize_handler")
-
-    with dpg.window(label="Can Shooter Shoot", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
-        # Attach orientation to the global widgets
-        open_widgets["mode_indicator"] = indicator
-        dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+180)))
-
-        with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
-            with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="can_shoot", show=False):
-                    dpg.draw_circle(
-                        center=(0,0), 
-                        radius=(dpg.get_item_height(indicator)/4), 
-                        color=(5, 255, 5), 
-                        thickness=5, 
-                        fill=(5, 94, 5, 50)
-                        )
-                    
-                with dpg.draw_node(tag="can_not_shoot", show=True):
-                    dpg.draw_polygon(
-                        points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
-                        color=(186, 0, 0),
-                        fill=(186, 0, 0, 10),
-                        thickness=5
-                        )
-
-            dpg.set_clip_space("mode_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
-
-    def drawlist_resize(sender, appdata):
-        width, height = dpg.get_item_rect_size("mode_indicator")
-        width -= 2 * 8
-        height -= 5 * 8
-        dpg.configure_item("indicator_drawlist", width=width, height=height)
-
-        # Drawing space
-        drawing_size = min(width, height)
-        dpg.set_clip_space(
-            item="mode_indicator_pass",
-            top_left_x=((width - drawing_size) // 2),
-            top_left_y=((height - drawing_size) // 2),
-            width=drawing_size,
-            height=drawing_size,
-            min_depth=-5.0,
-            max_depth=5.0
-        )
-    # Make all necessary connections for proper resizing
-    with dpg.item_handler_registry(tag="indicator_resize_handler"):
-        dpg.add_item_resize_handler(callback=drawlist_resize)
-
-    dpg.bind_item_handler_registry("mode_indicator", "indicator_resize_handler")
-
-
-def make_path_detection():
-    global open_widgets, robot_odometry
-
-    if open_widgets["path_detection"] is not None:
-        dpg.delete_item(open_widgets["path_detection"])
-        dpg.delete_item(item="path_drawlist")
-        dpg.delete_item(item="path_resize_handler")
-
-    with dpg.window(label="Auto Path Detection", tag="path_detection", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as detection:
-        # Attach orientation to the global widgets
-        open_widgets["path_detection"] = detection
-        dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+80)))
-
-        with dpg.drawlist(width=100, height=100, tag="path_drawlist"):
-            with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="path_detected", show=False):
-                    dpg.draw_circle(
-                        center=(0,0), 
-                        radius=25, 
-                        color=(5, 255, 5), 
-                        thickness=5, 
-                        fill=(144, 238, 144, 10)
-                        )
-
-                with dpg.draw_node(tag="path_not_detected", show=True):
-                    dpg.draw_circle(
-                        center=(0,0), 
-                        radius=25, 
-                        color=(186, 0, 0), 
-                        fill=(186, 0, 0, 50),
-                        thickness=5, 
-                        )
-
-            dpg.set_clip_space("path_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
-
-    def drawlist_resize(sender, appdata):
-        width, height = dpg.get_item_rect_size("path_detection")
-        width -= 2 * 8
-        height -= 5 * 8
-        dpg.configure_item("path_drawlist", width=width, height=height)
-
-        # Drawing space
-        drawing_size = min(width, height)
-        dpg.set_clip_space(
-            item="path_indicator_pass",
-            top_left_x=((width - drawing_size) // 2),
-            top_left_y=((height - drawing_size) // 2),
-            width=drawing_size,
-            height=drawing_size,
-            min_depth=-5.0,
-            max_depth=5.0
-        )
-    # Make all necessary connections for proper resizing
-    with dpg.item_handler_registry(tag="path_detection_resize_handler"):
-        dpg.add_item_resize_handler(callback=drawlist_resize)
-
-    dpg.bind_item_handler_registry("path_detection", "path_detection_resize_handler")
-
-# Makes the countdown
-def make_round_countdown():
-    global open_widgets
-
-    with dpg.window(label="Round Countdown", tag="round_countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as round_countdown:
-        dpg.set_item_pos(round_countdown, (dpg.get_viewport_width()-(dpg.get_item_width(round_countdown)+20),dpg.get_viewport_height()-(dpg.get_item_height(round_countdown)+280)))
-
-        with dpg.drawlist(width=100, height=100, tag="countdown_drawlist"):
-            with dpg.draw_layer(tag="countdown_pass", depth_clipping=False, perspective_divide=True):
-                dpg.draw_text(pos=(-0.6, 0.5), text="2:45", size=200, tag="round_countdown_text")
-
-        dpg.bind_item_font("round_countdown_text", clock_font)
-
-        dpg.set_clip_space("countdown_pass", 0, 0, 100, 100, -5.0, 5.0)
-
-        def drawlist_resize(sender, appdata):
-            width, height = dpg.get_item_rect_size("round_countdown")
-            width -= 2 * 8
-            height -= 5 * 8
-            dpg.configure_item("countdown_drawlist", width=width, height=height)
-            dpg.configure_item("round_countdown_text", size=min(width / 2.3, height / 1.2))
-
-            # Drawing space
-            drawing_size = min(width, height)
-            dpg.set_clip_space(
-                item="countdown_pass",
-                top_left_x=((width - drawing_size) // 2),
-                top_left_y=((height - drawing_size) // 2),
-                width=drawing_size,
-                height=drawing_size,
-                min_depth=-5.0,
-                max_depth=5.0
-            )
-
-        # Make all necessary connections for proper resizing
-        with dpg.item_handler_registry(tag="countdown_resize_handler"):
-            dpg.add_item_resize_handler(callback=drawlist_resize)
-
-        dpg.bind_item_handler_registry("round_countdown", "countdown_resize_handler")
 
 # Draws the path and all such points
 def draw_path(path_to_place):
+    path = [[field_x_to_canvas_x(path_to_place[0]), field_y_to_canvas_y(path_to_place[0])],
+            [field_x_to_canvas_x(path_to_place[1]), field_y_to_canvas_y(path_to_place[1])],
+            [field_x_to_canvas_x(path_to_place[2]), field_y_to_canvas_y(path_to_place[2])],
+            [field_x_to_canvas_x(path_to_place[3]), field_y_to_canvas_y(path_to_place[3])],
+    ]
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
 
     path_with_current_pos = np.stack((robot_pos, path_to_place))
-    
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
-    dpg.delete_item(item="robot_points")
-    bezier_points = path_to_cubic_points(path_with_current_pos, 3)
+    dpg.delete_item(item="robot_bezier_points")
+
+    cubic_points = path_to_cubic_points(path_with_current_pos, 3)
+    bezier_points = []
+    for i in range(len(cubic_points)):
+         bezier_points.append(cubic_points[i-1])
+    print(bezier_points[1])
+    # print(x_values, y_values)
+    xvals, yvals = bezier_curve(cubic_points, nTimes=100)
+    points_on_curve = np.stack([xvals, yvals], axis=1)
+
+
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
-        
-        for i in range(int(len(bezier_points) / 4)):
-            dpg.draw_bezier_cubic(
-                p1=field_to_canvas(bezier_points[(i*4) + 0][0], bezier_points[(i*4) + 0][1]),
-                p2=field_to_canvas(bezier_points[(i*4) + 1][0], bezier_points[(i*4) + 1][1]),
-                p3=field_to_canvas(bezier_points[(i*4) + 2][0], bezier_points[(i*4) + 2][1]),
-                p4=field_to_canvas(bezier_points[(i*4) + 3][0], bezier_points[(i*4) + 3][1]),
-                thickness=5,
-                color=(155, 155, 255, 200)
-            )
-            print((bezier_points[(i*4) + 0][0], bezier_points[(i*4) + 0][1]))
-            print(blue_stage_triangle)
+        for i in range(len(points_on_curve)):
+            dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
 
-            
   
-    with dpg.draw_node(tag="robot_handles", parent="field_robot_pass", show=True):
+    with dpg.draw_node(tag="robot_bezier_points", parent="field_robot_pass", show=True):
         
-        for i in range(int(len(bezier_points) / 4)):
-            dpg.draw_circle(center=field_to_canvas(bezier_points[(i*4) + 1][0], bezier_points[(i*4) + 1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
-            dpg.draw_circle(center=field_to_canvas(bezier_points[(i*4) + 2][0], bezier_points[(i*4) + 2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
-            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+0][0], bezier_points[(i*4)+0][1]), p2=field_to_canvas(bezier_points[(i*4)+1][0], bezier_points[(i*4)+1][1]), thickness=3, label="bezier_stuff")
-            # dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+0][0], bezier_points[(i*4)+0][1]), p2=field_to_canvas(bezier_points[(i*4)+3][0], bezier_points[(i*4)+3][1]), thickness=3, label="bezier_stuff")
-            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+1][0], bezier_points[(i*4)+1][1]), p2=field_to_canvas(bezier_points[(i*4)+2][0], bezier_points[(i*4)+2][1]), thickness=3, label="bezier_stuff")
-            dpg.draw_line(p1=field_to_canvas(bezier_points[(i*4)+2][0], bezier_points[(i*4)+2][1]), p2=field_to_canvas(bezier_points[(i*4)+3][0], bezier_points[(i*4)+3][1]), thickness=3, label="bezier_stuff")
-      
-        path1 = LineString([[bezier_points[0][0], bezier_points[0][1]], [bezier_points[1][0], bezier_points[1][1]]])
-        path2 = LineString([[bezier_points[0][0], bezier_points[0][1]], [bezier_points[2][0], bezier_points[2][1]]])
-        path3 = LineString([[bezier_points[0][0], bezier_points[0][1]], [bezier_points[3][0], bezier_points[3][1]]])
-        path4 = LineString([[bezier_points[3][0], bezier_points[3][1]], [bezier_points[1][0], bezier_points[1][1]]])
-        path5 = LineString([[bezier_points[3][0], bezier_points[3][1]], [bezier_points[2][0], bezier_points[2][1]]])
-        path6 = LineString([[bezier_points[2][0], bezier_points[2][1]], [bezier_points[1][0], bezier_points[1][1]]])
-        if red_stage_triangle.intersects(path1) == True:
-            print('it looks like its working')
-        elif red_stage_triangle.intersects(path2) == True:
-            print("it looks like its working")
-        elif red_stage_triangle.intersects(path3) == True:
-            print("it looks like its working")
-        elif red_stage_triangle.intersects(path4) == True:
-            print("it looks like its working")
-        elif red_stage_triangle.intersects(path5) == True:
-            print("it looks like its working")
-        elif red_stage_triangle.intersects(path6) == True:
-            print("it looks like its working")
-        else:
-            print("Something isn't working, keep trying stuff lol")
-            print(path1)
+        dpg.draw_circle(center=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_line(p1=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), p2=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+        dpg.draw_line(p1=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), p2=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+        dpg.draw_line(p1=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), p2=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
 
-
-    with dpg.draw_node(tag="robot_points", parent="field_robot_pass", show=True):
-        for node in path_with_current_pos:
-            dpg.draw_circle(
-                center=field_to_canvas(*node[0:2]), 
-                radius=5, 
-                thickness=4,
-                color=(255, 255, 255),
-                fill=(255, 255, 255)
-            )            
+       
 
     
 
@@ -694,7 +406,7 @@ def make_field_view():
     )
     dpg.set_item_callback(
         "ps_show_waypoints",
-        callback=lambda x: dpg.configure_item("robot_points", show=dpg.get_value(x))
+        callback=lambda x: dpg.configure_item("robot_bezier_points", show=dpg.get_value(x))
     )
     dpg.set_item_callback(
         "ps_show_handles",
@@ -706,7 +418,6 @@ def make_field_view():
         dpg.add_item_resize_handler(callback=drawlist_resize)
 
     dpg.bind_item_handler_registry("field_view", "field_resize_handler")
-
 
 # Update for whenever the frame is drawn
 def draw_call_update():
@@ -756,7 +467,6 @@ def draw_call_update():
                 draw_path(blue_speaker_cords)
             elif("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
                 draw_path(blue_amp_cords)
-
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
     global table_instance, chooser_options
@@ -792,7 +502,7 @@ def connect_table_and_listeners(timeout=5):
     table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    draw_path(blue_amp_cords)
+    draw_path(red_speaker_cords)
 
 def main():
     # Create the menu bar
@@ -801,10 +511,6 @@ def main():
             dpg.add_menu_item(label="Enable Something")
         with dpg.menu(label="Widgets"):
             dpg.add_menu_item(label="Field View", callback=make_field_view)
-            dpg.add_menu_item(label="Orientation", callback=make_orientation)
-            dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
-            dpg.add_menu_item(label="Mode Indicator", callback=make_mode_indicator)
-            dpg.add_menu_item(label="Path Detection", callback=make_path_detection)
         with dpg.menu(label="Override"):
             dpg.add_button(
                 label="Attempt Reconnect", 
@@ -827,13 +533,8 @@ def main():
     threading.Thread(target=connect_table_and_listeners, daemon=True).start()
     
     # Make all the windows to start with
-    make_auto_selector()
     make_field_view()
-    make_round_countdown()
-    make_mode_indicator()
-    make_path_detection()
-    make_orientation()
-
+    sample_path()
 
     # Setup
     dpg.setup_dearpygui()
