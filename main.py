@@ -554,15 +554,24 @@ def make_round_countdown():
 
 # creates the path based on the robot pose and the stuff to fix it
 def create_path(path_to_place, distance, handle):
-    if handle == "blue":
-        print(handle)
-    if handle == "red":
-        print(handle)
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
 
     path_with_current_pos = np.stack((robot_pos, path_to_place))
-
     cubic_points = path_to_cubic_points(path_with_current_pos, 3)
+
+    if handle == "blue":  
+        print(handle)
+        cubic_points[1][1] += (distance[0]*10)
+        print(distance[0]*10)
+        print(cubic_points[1][1])
+
+    if handle == "red":
+        print(handle)
+        cubic_points[1][1] += (distance[0]*10)
+        print(distance[0]*10)
+        print(cubic_points[1][1])
+
+
 
     bezier_points = []
     for i in range(len(cubic_points)):
@@ -589,10 +598,10 @@ def is_path_safe(points_on_curve):
                 handle = "red"
                 distance.append([red_stage_triangle.exterior.distance(points_for_testing_path_validity)])
     
-    move_thing = max(distance)
     if not distance:
-        return(True, move_thing, handle)
+        return(True, 1, None)
     else:
+        move_thing = max(distance)
         return(False, move_thing, handle)
 
 
@@ -602,9 +611,13 @@ def is_path_safe(points_on_curve):
 def draw_path(path_to_place):
 
     points_on_curve, xvals, yvals, bezier_points = create_path(path_to_place, 0, None)
+    print(bezier_points)
     is_path_safe_to_drive, distance, handle = is_path_safe(points_on_curve)
-    if is_path_safe_to_drive == False:
+    
+    while is_path_safe_to_drive == False:
         points_on_curve, xvals, yvals, bezier_points = create_path(path_to_place, distance, handle)
+        is_path_safe_to_drive, distance, handle = is_path_safe(points_on_curve)
+    print(bezier_points)
 
 
     dpg.delete_item(item="robot_path")
@@ -845,7 +858,7 @@ def connect_table_and_listeners(timeout=5):
     table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    draw_path(red_amp_cords)
+    draw_path(blue_amp_cords)
 
 def main():
     # Create the menu bar
