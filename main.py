@@ -552,12 +552,12 @@ def make_round_countdown():
 
         dpg.bind_item_handler_registry("round_countdown", "countdown_resize_handler")
 
-
-
-# Draws the path and all such points
-
-def draw_path(path_to_place):
-
+# creates the path based on the robot pose and the stuff to fix it
+def create_path(path_to_place, distance, handle):
+    if handle == "blue":
+        print(handle)
+    if handle == "red":
+        print(handle)
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
 
     path_with_current_pos = np.stack((robot_pos, path_to_place))
@@ -571,6 +571,41 @@ def draw_path(path_to_place):
 
     points_on_curve = np.stack([xvals, yvals], axis=1)
     
+    return(points_on_curve, xvals, yvals, bezier_points)
+
+# checks if the path is safe to execute
+def is_path_safe(points_on_curve):
+
+    distance = []
+
+    for i in range(len(points_on_curve)):
+            points_for_testing_path_validity = sp.Point(tuple(points_on_curve[i]))
+
+            if blue_stage_triangle.contains(points_for_testing_path_validity):
+                handle = "blue"
+                distance.append([blue_stage_triangle.exterior.distance(points_for_testing_path_validity)])
+
+            if red_stage_triangle.contains(points_for_testing_path_validity):
+                handle = "red"
+                distance.append([red_stage_triangle.exterior.distance(points_for_testing_path_validity)])
+    
+    move_thing = max(distance)
+    if not distance:
+        return(True, move_thing, handle)
+    else:
+        return(False, move_thing, handle)
+
+
+
+# Draws the path and all such points
+
+def draw_path(path_to_place):
+
+    points_on_curve, xvals, yvals, bezier_points = create_path(path_to_place, 0, None)
+    is_path_safe_to_drive, distance, handle = is_path_safe(points_on_curve)
+    if is_path_safe_to_drive == False:
+        points_on_curve, xvals, yvals, bezier_points = create_path(path_to_place, distance, handle)
+
 
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
@@ -579,17 +614,6 @@ def draw_path(path_to_place):
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         for i in range(len(points_on_curve)):
             dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
-        distance = []
-        for i in range(len(points_on_curve)):
-            points_for_testing_path_validity = sp.Point(tuple(points_on_curve[i]))
-
-            if blue_stage_triangle.contains(points_for_testing_path_validity) or red_stage_triangle.contains(points_for_testing_path_validity):
-                # print("detection maybe", i)
-                dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(255, 255, 255), fill=(255, 255, 255))
-                distance.append([red_stage_triangle.exterior.distance(points_for_testing_path_validity)])
-        print(distance)
-        move_thing = max(distance)
-        print(move_thing)
 
         dpg.draw_triangle(p1=(field_x_to_canvas_x(blue_middle_waypoint_x), field_y_to_canvas_y(blue_middle_waypoint_y)), p2=(field_x_to_canvas_x(blue_upper_waypoint_x), field_y_to_canvas_y(blue_upper_waypoint_y)), p3=(field_x_to_canvas_x(blue_lower_waypoint_x), field_y_to_canvas_y(blue_lower_waypoint_y)), tag="blue_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
         dpg.draw_triangle(p1=(field_x_to_canvas_x(red_middle_waypoint_x), field_y_to_canvas_y(red_middle_waypoint_y)), p2=(field_x_to_canvas_x(red_upper_waypoint_x), field_y_to_canvas_y(red_upper_waypoint_y)), p3=(field_x_to_canvas_x(red_lower_waypoint_x), field_y_to_canvas_y(red_lower_waypoint_y)), tag="red_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
