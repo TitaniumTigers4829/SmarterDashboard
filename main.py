@@ -552,7 +552,10 @@ def make_round_countdown():
 
         dpg.bind_item_handler_registry("round_countdown", "countdown_resize_handler")
 
+
+
 # Draws the path and all such points
+
 def draw_path(path_to_place):
 
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
@@ -576,22 +579,21 @@ def draw_path(path_to_place):
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         for i in range(len(points_on_curve)):
             dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
-
+        distance = []
         for i in range(len(points_on_curve)):
             points_for_testing_path_validity = sp.Point(tuple(points_on_curve[i]))
 
             if blue_stage_triangle.contains(points_for_testing_path_validity) or red_stage_triangle.contains(points_for_testing_path_validity):
-                print("detection maybe", i)
+                # print("detection maybe", i)
                 dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(255, 255, 255), fill=(255, 255, 255))
-
-            print(points_for_testing_path_validity)
+                distance.append([red_stage_triangle.exterior.distance(points_for_testing_path_validity)])
+        print(distance)
+        move_thing = max(distance)
+        print(move_thing)
 
         dpg.draw_triangle(p1=(field_x_to_canvas_x(blue_middle_waypoint_x), field_y_to_canvas_y(blue_middle_waypoint_y)), p2=(field_x_to_canvas_x(blue_upper_waypoint_x), field_y_to_canvas_y(blue_upper_waypoint_y)), p3=(field_x_to_canvas_x(blue_lower_waypoint_x), field_y_to_canvas_y(blue_lower_waypoint_y)), tag="blue_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
         dpg.draw_triangle(p1=(field_x_to_canvas_x(red_middle_waypoint_x), field_y_to_canvas_y(red_middle_waypoint_y)), p2=(field_x_to_canvas_x(red_upper_waypoint_x), field_y_to_canvas_y(red_upper_waypoint_y)), p3=(field_x_to_canvas_x(red_lower_waypoint_x), field_y_to_canvas_y(red_lower_waypoint_y)), tag="red_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
        
-        print(blue_stage_triangle)
-        print(field_x_to_canvas_x(blue_lower_waypoint_x))
-        print(field_y_to_canvas_y(blue_lower_waypoint_y))
     
 
     with dpg.draw_node(tag="robot_bezier_points", parent="field_robot_pass", show=True):
