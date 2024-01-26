@@ -2,7 +2,7 @@ from networktables.util import ChooserControl
 from networktables import NetworkTables
 from networktables import NetworkTablesInstance
 import dearpygui.dearpygui as dpg
-import shapely as sp
+import shapely.geometry as sp
 import numpy as np
 from scipy.special import comb
 import threading
@@ -49,20 +49,19 @@ red_speaker_cords = [15.25, 7.25, True, 0]
 blue_speaker_cords = [1.25, 7, True, 180]
 
 # waypoints for object avoidance
-red_upper_waypoint_x = 5.869
-red_upper_waypoint_y = 2.71
-red_middle_waypoint_x = 3.447
-red_middle_waypoint_y = 4.232
-red_lower_waypoint_x = 5.869
-red_lower_waypoint_y = 5.534
+red_upper_waypoint_x = 10.8
+red_upper_waypoint_y = 7
+red_middle_waypoint_x = 13.5
+red_middle_waypoint_y = 4.0
+red_lower_waypoint_x = 10.8
+red_lower_waypoint_y = 1
 
-blue_upper_waypoint_x = 10.813
-blue_upper_waypoint_y = 2.71
-blue_middle_waypoint_x = 13.511
-blue_middle_waypoint_y = 4.232
-blue_lower_waypoint_x = 10.813
-blue_lower_waypoint_y = 5.534
-
+blue_upper_waypoint_x = 5.8
+blue_upper_waypoint_y = 7
+blue_middle_waypoint_x = 3
+blue_middle_waypoint_y = 4.0
+blue_lower_waypoint_x = 5.8
+blue_lower_waypoint_y = 1
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -558,19 +557,21 @@ def draw_path(path_to_place):
 
     cubic_points = path_to_cubic_points(path_with_current_pos, 3)
 
-
     bezier_points = []
     for i in range(len(cubic_points)):
          bezier_points.append(cubic_points[i-1])
     xvals, yvals = bezier_curve(cubic_points, nTimes=100)
 
     points_on_curve = np.stack([xvals, yvals], axis=1)
-    # print(points_on_curve)
-    points_for_testing_path_validity = sp.points(xvals, yvals)
-    for i in range(len(points_for_testing_path_validity)):
-        if(blue_stage_triangle.contains(points_for_testing_path_validity[i]) == True):
+    for i in range(len(points_on_curve)):
+        points_for_testing_path_validity = sp.Point(tuple(points_on_curve[i]))
+
+        if(blue_stage_triangle.contains(points_for_testing_path_validity) == True):
             print("woah thats crazy")
-        print(i)
+
+        # print(points_for_testing_path_validity)
+
+
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_bezier_points")
@@ -578,8 +579,14 @@ def draw_path(path_to_place):
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         for i in range(len(points_on_curve)):
             dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
+        dpg.draw_circle((field_x_to_canvas_x(xvals[40]), field_y_to_canvas_y(yvals[40])), 4, color=(255, 255, 255), fill=(255, 255, 255))
+        print(blue_stage_triangle)
+        dpg.draw_triangle(p1=(field_x_to_canvas_x(blue_middle_waypoint_x), field_y_to_canvas_y(blue_middle_waypoint_y)), p2=(field_x_to_canvas_x(blue_upper_waypoint_x), field_y_to_canvas_y(blue_upper_waypoint_y)), p3=(field_x_to_canvas_x(blue_lower_waypoint_x), field_y_to_canvas_y(blue_lower_waypoint_y)), tag="blue_stage", thickness=10, color=(255, 255, 255), parent="field_robot_pass")
+        dpg.draw_triangle(p1=(field_x_to_canvas_x(red_middle_waypoint_x), field_y_to_canvas_y(red_middle_waypoint_y)), p2=(field_x_to_canvas_x(red_upper_waypoint_x), field_y_to_canvas_y(red_upper_waypoint_y)), p3=(field_x_to_canvas_x(red_lower_waypoint_x), field_y_to_canvas_y(red_lower_waypoint_y)), tag="red_stage", thickness=10, color=(255, 255, 255), parent="field_robot_pass")
+        print(field_x_to_canvas_x(blue_lower_waypoint_x))
+        print(field_y_to_canvas_y(blue_lower_waypoint_y))
+    
 
-  
     with dpg.draw_node(tag="robot_bezier_points", parent="field_robot_pass", show=True):
         
         dpg.draw_circle(center=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
@@ -589,7 +596,6 @@ def draw_path(path_to_place):
         dpg.draw_line(p1=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), p2=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), p2=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), p2=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
-
 
 # Makes the field layout window
 def make_field_view():
