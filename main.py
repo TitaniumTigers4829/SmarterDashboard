@@ -49,19 +49,19 @@ red_speaker_cords = [15.25, 7.25, True, 0]
 blue_speaker_cords = [1.25, 7, True, 180]
 
 # waypoints for object avoidance
-red_upper_waypoint_x = 10.8
-red_upper_waypoint_y = 7
-red_middle_waypoint_x = 13.5
+red_upper_waypoint_x = 10.75
+red_upper_waypoint_y = 7.2
+red_middle_waypoint_x = 13.7
 red_middle_waypoint_y = 4.0
-red_lower_waypoint_x = 10.8
-red_lower_waypoint_y = 1
+red_lower_waypoint_x = 10.75
+red_lower_waypoint_y = 0.82
 
-blue_upper_waypoint_x = 5.8
-blue_upper_waypoint_y = 7
+blue_upper_waypoint_x = 5.85
+blue_upper_waypoint_y = 7.2
 blue_middle_waypoint_x = 3
 blue_middle_waypoint_y = 4.0
-blue_lower_waypoint_x = 5.8
-blue_lower_waypoint_y = 1
+blue_lower_waypoint_x = 5.85
+blue_lower_waypoint_y = 0.82
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -101,19 +101,23 @@ def field_y_to_canvas_y(y):
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_y
 
-blue_stage_triangle = sp.Polygon([(field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[0], 
-                                field_to_canvas(blue_upper_waypoint_x, blue_upper_waypoint_y)[1]), 
-                               (field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[0], 
-                                field_to_canvas(blue_lower_waypoint_x, blue_lower_waypoint_y)[1]), 
-                               (field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[0], 
-                                field_to_canvas(blue_middle_waypoint_x, blue_middle_waypoint_y)[1])])
+blue_stage_triangle = sp.Polygon(
+    [
+        ((blue_upper_waypoint_x), (blue_upper_waypoint_y)),
+        ((blue_middle_waypoint_x), (blue_middle_waypoint_y)),
+        ((blue_lower_waypoint_x), (blue_lower_waypoint_y)),
 
-red_stage_triangle = sp.Polygon([(field_to_canvas(red_upper_waypoint_x, red_upper_waypoint_y)[0], 
-                                field_to_canvas(red_upper_waypoint_x, red_upper_waypoint_y)[1]), 
-                               (field_to_canvas(red_lower_waypoint_x, red_lower_waypoint_y)[0], 
-                                field_to_canvas(red_lower_waypoint_x, red_lower_waypoint_y)[1]), 
-                               (field_to_canvas(red_middle_waypoint_x, red_middle_waypoint_y)[0], 
-                                field_to_canvas(red_middle_waypoint_x, red_middle_waypoint_y)[1])])
+    ]
+)
+
+red_stage_triangle = sp.Polygon(
+    [
+        ((red_upper_waypoint_x), (red_upper_waypoint_y)),
+        ((red_middle_waypoint_x), (red_middle_waypoint_y)),
+        ((red_lower_waypoint_x), (red_lower_waypoint_y)),
+
+    ]
+)
 
 def path_to_cubic_points(path, curvieness):
     points = []
@@ -563,14 +567,7 @@ def draw_path(path_to_place):
     xvals, yvals = bezier_curve(cubic_points, nTimes=100)
 
     points_on_curve = np.stack([xvals, yvals], axis=1)
-    for i in range(len(points_on_curve)):
-        points_for_testing_path_validity = sp.Point(tuple(points_on_curve[i]))
-
-        if(blue_stage_triangle.contains(points_for_testing_path_validity) == True):
-            print("woah thats crazy")
-
-        # print(points_for_testing_path_validity)
-
+    
 
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
@@ -579,10 +576,20 @@ def draw_path(path_to_place):
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         for i in range(len(points_on_curve)):
             dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
-        dpg.draw_circle((field_x_to_canvas_x(xvals[40]), field_y_to_canvas_y(yvals[40])), 4, color=(255, 255, 255), fill=(255, 255, 255))
+
+        for i in range(len(points_on_curve)):
+            points_for_testing_path_validity = sp.Point(tuple(points_on_curve[i]))
+
+            if blue_stage_triangle.contains(points_for_testing_path_validity) or red_stage_triangle.contains(points_for_testing_path_validity):
+                print("detection maybe", i)
+                dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(255, 255, 255), fill=(255, 255, 255))
+
+            print(points_for_testing_path_validity)
+
+        dpg.draw_triangle(p1=(field_x_to_canvas_x(blue_middle_waypoint_x), field_y_to_canvas_y(blue_middle_waypoint_y)), p2=(field_x_to_canvas_x(blue_upper_waypoint_x), field_y_to_canvas_y(blue_upper_waypoint_y)), p3=(field_x_to_canvas_x(blue_lower_waypoint_x), field_y_to_canvas_y(blue_lower_waypoint_y)), tag="blue_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
+        dpg.draw_triangle(p1=(field_x_to_canvas_x(red_middle_waypoint_x), field_y_to_canvas_y(red_middle_waypoint_y)), p2=(field_x_to_canvas_x(red_upper_waypoint_x), field_y_to_canvas_y(red_upper_waypoint_y)), p3=(field_x_to_canvas_x(red_lower_waypoint_x), field_y_to_canvas_y(red_lower_waypoint_y)), tag="red_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
+       
         print(blue_stage_triangle)
-        dpg.draw_triangle(p1=(field_x_to_canvas_x(blue_middle_waypoint_x), field_y_to_canvas_y(blue_middle_waypoint_y)), p2=(field_x_to_canvas_x(blue_upper_waypoint_x), field_y_to_canvas_y(blue_upper_waypoint_y)), p3=(field_x_to_canvas_x(blue_lower_waypoint_x), field_y_to_canvas_y(blue_lower_waypoint_y)), tag="blue_stage", thickness=10, color=(255, 255, 255), parent="field_robot_pass")
-        dpg.draw_triangle(p1=(field_x_to_canvas_x(red_middle_waypoint_x), field_y_to_canvas_y(red_middle_waypoint_y)), p2=(field_x_to_canvas_x(red_upper_waypoint_x), field_y_to_canvas_y(red_upper_waypoint_y)), p3=(field_x_to_canvas_x(red_lower_waypoint_x), field_y_to_canvas_y(red_lower_waypoint_y)), tag="red_stage", thickness=10, color=(255, 255, 255), parent="field_robot_pass")
         print(field_x_to_canvas_x(blue_lower_waypoint_x))
         print(field_y_to_canvas_y(blue_lower_waypoint_y))
     
@@ -812,7 +819,7 @@ def connect_table_and_listeners(timeout=5):
     table_instance.addEntryListener(on_networktables_change)
 
 def sample_path():
-    draw_path(blue_speaker_cords)
+    draw_path(red_amp_cords)
 
 def main():
     # Create the menu bar
