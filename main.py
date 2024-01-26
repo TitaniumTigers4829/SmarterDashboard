@@ -41,7 +41,7 @@ limelight_odometry = {
     "field_y": 4,
     "pitch": 0, # 2d rotation
 }
-
+global cubic_points
 # coordinates for field places
 red_amp_cords = [13.75, 10, True, 90]
 blue_amp_cords = [2.5, 10, True, 90]
@@ -49,19 +49,19 @@ red_speaker_cords = [15.25, 7.25, True, 0]
 blue_speaker_cords = [1.25, 7, True, 180]
 
 # waypoints for object avoidance
-red_upper_waypoint_x = 10.75
-red_upper_waypoint_y = 7.2
-red_middle_waypoint_x = 13.7
+red_upper_waypoint_x = 10.25
+red_upper_waypoint_y = 8.6
+red_middle_waypoint_x = 14.35
 red_middle_waypoint_y = 4.0
-red_lower_waypoint_x = 10.75
-red_lower_waypoint_y = 0.82
+red_lower_waypoint_x = 10.25
+red_lower_waypoint_y = -0.5
 
-blue_upper_waypoint_x = 5.85
-blue_upper_waypoint_y = 7.2
-blue_middle_waypoint_x = 3
+blue_upper_waypoint_x = 6.35
+blue_upper_waypoint_y = 8.6
+blue_middle_waypoint_x = 2
 blue_middle_waypoint_y = 4.0
-blue_lower_waypoint_x = 5.85
-blue_lower_waypoint_y = 0.82
+blue_lower_waypoint_x = 6.35
+blue_lower_waypoint_y = -0.5
 
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
@@ -118,6 +118,16 @@ red_stage_triangle = sp.Polygon(
 
     ]
 )
+
+game_field_rectangle = sp.Polygon(
+    [
+        (0, -4),
+        (16.54175, -4),
+        (16.54175, 12),
+        (0, 12)
+    ]
+)
+
 
 def path_to_cubic_points(path, curvieness):
     points = []
@@ -914,3 +924,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
