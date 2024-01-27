@@ -34,8 +34,8 @@ lower_red_waypoint = [12.5, -1, 0, 0]
 
 # Global robot data
 robot_odometry = {
-    "field_x": 1,
-    "field_y": 1,
+    "field_x": 8.25,
+    "field_y": 4,
     "pitch": 0, # 2d rotation
     "roll": 0,
     "yaw": 0,
@@ -107,7 +107,7 @@ def path_to_cubic_points(path, curvieness):
     for i in range(len(path) - 1):
         start = path[i][0:2]
         end = path[i+1][0:2]
-        handle_length = 2#np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / curvieness
+        handle_length = np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / curvieness
         start_handle = [
             start[0] + np.cos(np.deg2rad(path[i][3])) * handle_length, 
             start[1] + np.sin(np.deg2rad(path[i][3])) * handle_length
@@ -124,25 +124,26 @@ def path_to_cubic_points(path, curvieness):
               ]
     return points
 
-#bernstein polynomial of n, i as a function of t
-def bernstein_poly(i, n, t):
-
-    return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
+#bernstein polynomial of nth degree, i as a function of t
+def bernstein_poly(i, degree, listOfPointsAcrossCurve):
+    # print(comb(degree, i))
+    print(comb(degree, i))
+    return comb(degree, i) * ( listOfPointsAcrossCurve**(degree-i) ) * (1 - listOfPointsAcrossCurve)**i
 
 # returns a rough list of points along the bezier curve
-def bezier_curve(points, nTimes=1):
+def bezier_curve(points, nTimes=100):
 
     nPoints = len(points)
+    # print(nPoints)
     xPoints = np.array([p[0] for p in points])
     yPoints = np.array([p[1] for p in points])
-
-    t = np.linspace(0.0, 1.0, nTimes)
-
-    polynomial_array = np.array([ bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)   ])
-
+    # print(xPoints[0], yPoints[0], "xpoints, ypoints")
+    listOfPointsAcrossCurve = np.linspace(0.0, 1.0, nTimes)
+    polynomial_array = np.array([ bernstein_poly(i, nPoints-1, listOfPointsAcrossCurve) for i in range(0, nPoints)   ])
+    # print(polynomial_array)
     xvals = np.dot(xPoints, polynomial_array)
     yvals = np.dot(yPoints, polynomial_array)
-
+    print(xvals[0], yvals[0])
     return xvals, yvals
 
 
@@ -541,39 +542,43 @@ def make_round_countdown():
 def create_path(path_to_place):
 
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
-    # if robot_odometry["field_x"] < 3:
-    #     robot_path = np.stack(robot_pos, path_to_place)
-    #     cubic_points = path_to_cubic_points(robot_path)
-    #     bezier_points = []
-        
-    #     for i in range(len(cubic_points)):
-    #        bezier_points.append(cubic_points[i-1])
-    #     xvals, yvals = bezier_curve(cubic_points, nTimes=100)
-
-    #     return(xvals, yvals, 0, 0, bezier_points, 0)
-
-
-    
+    print(robot_pos)
 
     if path_to_place[0] >= 10:
-        if robot_odometry["field_y"] <= 4:
-            if robot_odometry["field_x"] >= 12:
+        
+        if robot_odometry["field_x"] >= 12:
                 middle_waypoint = []
-            else:
+        else:
+            if robot_odometry["field_y"] <= 3:
                 middle_waypoint = lower_red_waypoint
-        else:
-            middle_waypoint = upper_red_waypoint
+            else:
+                middle_waypoint = upper_red_waypoint
     else:
-        if robot_odometry["field_y"] <= 4:
-            middle_waypoint = lower_blue_waypoint
+
+        if robot_odometry["field_x"] <= 3:
+                middle_waypoint = []
         else:
-            middle_waypoint = upper_blue_waypoint
-            
+            if robot_odometry["field_y"] <= 3:
+                middle_waypoint = lower_blue_waypoint      
+            else:
+                middle_waypoint = upper_blue_waypoint      
+
+    # do this if no waypoint is needed
+    if middle_waypoint == []:
+        curve = np.stack((robot_pos, path_to_place))
+        cubic_points = path_to_cubic_points(curve, 3)
+        bezier_points = []
+        for i in range(len(cubic_points)):
+            bezier_points.append(cubic_points[i-1])
+        xvals, yvals = bezier_curve(cubic_points, nTimes=100)
+        return(xvals, yvals, [0], [0], bezier_points, [0])
+
+    
+    # do this if waypoint is needed
     first_part = np.stack((robot_pos, middle_waypoint))
     second_part = np.stack((middle_waypoint, path_to_place))
     first_spline_cubic_points = path_to_cubic_points(first_part, 3)
     second_spline_cubic_points = path_to_cubic_points(second_part, 3)
-
     bezier_points = []
     second_bezier_points = []
 
@@ -585,7 +590,7 @@ def create_path(path_to_place):
 
     xvals_second, yvals_second = bezier_curve(second_spline_cubic_points, nTimes=100)
     xvals, yvals = bezier_curve(first_spline_cubic_points, nTimes=100)
-
+    # print(xvals[0], yvals[0])
     return(xvals, yvals, xvals_second, yvals_second, bezier_points, second_bezier_points)
 
 
@@ -603,10 +608,10 @@ def draw_path(path_to_place):
 
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
         for i in range(len(xvals)):
-            dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
-        
-        for i in range(len(xvals_second)):
-            dpg.draw_circle((field_x_to_canvas_x(xvals_second[i]), field_y_to_canvas_y(yvals_second[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
+            dpg.draw_circle((field_x_to_canvas_x(xvals[i-1]), field_y_to_canvas_y(yvals[i-1])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
+        if xvals_second[0] != 0:
+            for i in range(len(xvals_second)):
+                dpg.draw_circle((field_x_to_canvas_x(xvals_second[i-1]), field_y_to_canvas_y(yvals_second[i-1])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
 
     with dpg.draw_node(tag="robot_bezier_points", parent="field_robot_pass", show=True):
         # draws the robot nodes
@@ -614,19 +619,23 @@ def draw_path(path_to_place):
         dpg.draw_circle(center=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
         dpg.draw_circle(center=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
         dpg.draw_circle(center=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
-        dpg.draw_circle(center=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
-        dpg.draw_circle(center=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
-        dpg.draw_circle(center=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
-        dpg.draw_circle(center=field_to_canvas(second_bezier_points[0][0], second_bezier_points[0][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
        
         # draws the lines between the handles
-        dpg.draw_line(p1=field_to_canvas(second_bezier_points[0][0], second_bezier_points[0][1]), p2=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
-        dpg.draw_line(p1=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), p2=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
-        dpg.draw_line(p1=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), p2=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), p2=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), p2=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), p2=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
  
+        if xvals_second[0] != 0:
+            dpg.draw_circle(center=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+            dpg.draw_circle(center=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+            dpg.draw_circle(center=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+            dpg.draw_circle(center=field_to_canvas(second_bezier_points[0][0], second_bezier_points[0][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+       
+            # draws the lines between the handles
+            dpg.draw_line(p1=field_to_canvas(second_bezier_points[0][0], second_bezier_points[0][1]), p2=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+            dpg.draw_line(p1=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), p2=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+            dpg.draw_line(p1=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), p2=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+       
 # Makes the field layout window
 def make_field_view():
     robot_width = 0.03
