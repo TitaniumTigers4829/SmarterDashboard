@@ -27,10 +27,15 @@ connection_status = False
 # Global chooser options
 chooser_options = []
 
+upper_blue_waypoint = [4, 9.5, 0, 180]
+lower_blue_waypoint = [4, -1, 0, 180]
+upper_red_waypoint = [12.5, 9.5, 0, 0]
+lower_red_waypoint = [12.5, -1, 0, 0]
+
 # Global robot data
 robot_odometry = {
-    "field_x": 8.25,
-    "field_y": 4,
+    "field_x": 1,
+    "field_y": 1,
     "pitch": 0, # 2d rotation
     "roll": 0,
     "yaw": 0,
@@ -41,7 +46,6 @@ limelight_odometry = {
     "field_y": 4,
     "pitch": 0, # 2d rotation
 }
-global cubic_points
 # coordinates for field places
 red_amp_cords = [13.75, 10, True, 90]
 blue_amp_cords = [2.5, 10, True, 90]
@@ -49,20 +53,6 @@ red_speaker_cords = [15.25, 7.25, True, 0]
 blue_speaker_cords = [1.25, 7, True, 180]
 
 # waypoints for object avoidance
-red_upper_waypoint_x = 10.25
-red_upper_waypoint_y = 8.6
-red_middle_waypoint_x = 14.35
-red_middle_waypoint_y = 4.0
-red_lower_waypoint_x = 10.25
-red_lower_waypoint_y = -0.5
-
-blue_upper_waypoint_x = 6.35
-blue_upper_waypoint_y = 8.6
-blue_middle_waypoint_x = 2
-blue_middle_waypoint_y = 4.0
-blue_lower_waypoint_x = 6.35
-blue_lower_waypoint_y = -0.5
-
 # Fetch textures (should be a function)
 logo_width, logo_height, logo_channels, logo_data = dpg.load_image('GUI/4829logo.png') # 0: width, 1: height, 2: channels, 3: data
 field_width, field_height, field_channels, field_data = dpg.load_image('GUI/field24.png') # 0: width, 1: height, 2: channels, 3: data
@@ -101,23 +91,6 @@ def field_y_to_canvas_y(y):
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_y
 
-blue_stage_triangle = sp.Polygon(
-    [
-        ((blue_upper_waypoint_x), (blue_upper_waypoint_y)),
-        ((blue_middle_waypoint_x), (blue_middle_waypoint_y)),
-        ((blue_lower_waypoint_x), (blue_lower_waypoint_y)),
-
-    ]
-)
-
-red_stage_triangle = sp.Polygon(
-    [
-        ((red_upper_waypoint_x), (red_upper_waypoint_y)),
-        ((red_middle_waypoint_x), (red_middle_waypoint_y)),
-        ((red_lower_waypoint_x), (red_lower_waypoint_y)),
-
-    ]
-)
 
 game_field_rectangle = sp.Polygon(
     [
@@ -134,7 +107,7 @@ def path_to_cubic_points(path, curvieness):
     for i in range(len(path) - 1):
         start = path[i][0:2]
         end = path[i+1][0:2]
-        handle_length = np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / curvieness
+        handle_length = 2#np.sqrt((start[0] - end[0])**2 + (start[1] - end[1])**2) / curvieness
         start_handle = [
             start[0] + np.cos(np.deg2rad(path[i][3])) * handle_length, 
             start[1] + np.sin(np.deg2rad(path[i][3])) * handle_length
@@ -562,57 +535,59 @@ def make_round_countdown():
 
         dpg.bind_item_handler_registry("round_countdown", "countdown_resize_handler")
 
+
+
 # creates the path based on the robot pose and the stuff to fix it
-def create_path(path_to_place, distance, handle):
+def create_path(path_to_place):
+
     robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
+    # if robot_odometry["field_x"] < 3:
+    #     robot_path = np.stack(robot_pos, path_to_place)
+    #     cubic_points = path_to_cubic_points(robot_path)
+    #     bezier_points = []
+        
+    #     for i in range(len(cubic_points)):
+    #        bezier_points.append(cubic_points[i-1])
+    #     xvals, yvals = bezier_curve(cubic_points, nTimes=100)
 
-    path_with_current_pos = np.stack((robot_pos, path_to_place))
-    cubic_points = path_to_cubic_points(path_with_current_pos, 3)
-
-    if handle == "blue":  
-        print(handle)
-        cubic_points[1][1] += (distance[0]*10)
-        print(distance[0]*10)
-        print(cubic_points[1][1])
-
-    if handle == "red":
-        print(handle)
-        cubic_points[1][1] += (distance[0]*10)
-        print(distance[0]*10)
-        print(cubic_points[1][1])
+    #     return(xvals, yvals, 0, 0, bezier_points, 0)
 
 
+    
+
+    if path_to_place[0] >= 10:
+        if robot_odometry["field_y"] <= 4:
+            if robot_odometry["field_x"] >= 12:
+                middle_waypoint = []
+            else:
+                middle_waypoint = lower_red_waypoint
+        else:
+            middle_waypoint = upper_red_waypoint
+    else:
+        if robot_odometry["field_y"] <= 4:
+            middle_waypoint = lower_blue_waypoint
+        else:
+            middle_waypoint = upper_blue_waypoint
+            
+    first_part = np.stack((robot_pos, middle_waypoint))
+    second_part = np.stack((middle_waypoint, path_to_place))
+    first_spline_cubic_points = path_to_cubic_points(first_part, 3)
+    second_spline_cubic_points = path_to_cubic_points(second_part, 3)
 
     bezier_points = []
-    for i in range(len(cubic_points)):
-         bezier_points.append(cubic_points[i-1])
-    xvals, yvals = bezier_curve(cubic_points, nTimes=100)
+    second_bezier_points = []
 
-    points_on_curve = np.stack([xvals, yvals], axis=1)
-    
-    return(points_on_curve, xvals, yvals, bezier_points)
+    for i in range(len(first_spline_cubic_points)):
+         bezier_points.append(first_spline_cubic_points[i-1])
 
-# checks if the path is safe to execute
-def is_path_safe(points_on_curve):
+    for i in range(len(second_spline_cubic_points)):
+         second_bezier_points.append(second_spline_cubic_points[i-1])
 
-    distance = []
+    xvals_second, yvals_second = bezier_curve(second_spline_cubic_points, nTimes=100)
+    xvals, yvals = bezier_curve(first_spline_cubic_points, nTimes=100)
 
-    for i in range(len(points_on_curve)):
-            points_for_testing_path_validity = sp.Point(tuple(points_on_curve[i]))
+    return(xvals, yvals, xvals_second, yvals_second, bezier_points, second_bezier_points)
 
-            if blue_stage_triangle.contains(points_for_testing_path_validity):
-                handle = "blue"
-                distance.append([blue_stage_triangle.exterior.distance(points_for_testing_path_validity)])
-
-            if red_stage_triangle.contains(points_for_testing_path_validity):
-                handle = "red"
-                distance.append([red_stage_triangle.exterior.distance(points_for_testing_path_validity)])
-    
-    if not distance:
-        return(True, 1, None)
-    else:
-        move_thing = max(distance)
-        return(False, move_thing, handle)
 
 
 
@@ -620,39 +595,38 @@ def is_path_safe(points_on_curve):
 
 def draw_path(path_to_place):
 
-    points_on_curve, xvals, yvals, bezier_points = create_path(path_to_place, 0, None)
-    print(bezier_points)
-    is_path_safe_to_drive, distance, handle = is_path_safe(points_on_curve)
+    xvals, yvals, xvals_second, yvals_second, bezier_points, second_bezier_points = create_path(path_to_place)
     
-    while is_path_safe_to_drive == False:
-        points_on_curve, xvals, yvals, bezier_points = create_path(path_to_place, distance, handle)
-        is_path_safe_to_drive, distance, handle = is_path_safe(points_on_curve)
-    print(bezier_points)
-
-
     dpg.delete_item(item="robot_path")
     dpg.delete_item(item="robot_handles")
     dpg.delete_item(item="robot_bezier_points")
 
     with dpg.draw_node(tag="robot_path", parent="field_robot_pass", show=True):
-        for i in range(len(points_on_curve)):
+        for i in range(len(xvals)):
             dpg.draw_circle((field_x_to_canvas_x(xvals[i]), field_y_to_canvas_y(yvals[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
-
-        dpg.draw_triangle(p1=(field_x_to_canvas_x(blue_middle_waypoint_x), field_y_to_canvas_y(blue_middle_waypoint_y)), p2=(field_x_to_canvas_x(blue_upper_waypoint_x), field_y_to_canvas_y(blue_upper_waypoint_y)), p3=(field_x_to_canvas_x(blue_lower_waypoint_x), field_y_to_canvas_y(blue_lower_waypoint_y)), tag="blue_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
-        dpg.draw_triangle(p1=(field_x_to_canvas_x(red_middle_waypoint_x), field_y_to_canvas_y(red_middle_waypoint_y)), p2=(field_x_to_canvas_x(red_upper_waypoint_x), field_y_to_canvas_y(red_upper_waypoint_y)), p3=(field_x_to_canvas_x(red_lower_waypoint_x), field_y_to_canvas_y(red_lower_waypoint_y)), tag="red_stage", thickness=2, color=(255, 255, 255), parent="field_robot_pass")
-       
-    
+        
+        for i in range(len(xvals_second)):
+            dpg.draw_circle((field_x_to_canvas_x(xvals_second[i]), field_y_to_canvas_y(yvals_second[i])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
 
     with dpg.draw_node(tag="robot_bezier_points", parent="field_robot_pass", show=True):
-        
+        # draws the robot nodes
         dpg.draw_circle(center=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
         dpg.draw_circle(center=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
         dpg.draw_circle(center=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
         dpg.draw_circle(center=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+        dpg.draw_circle(center=field_to_canvas(second_bezier_points[0][0], second_bezier_points[0][1]), radius=5, thickness=4, color=(255, 255, 255), fill=(255, 255, 255))
+       
+        # draws the lines between the handles
+        dpg.draw_line(p1=field_to_canvas(second_bezier_points[0][0], second_bezier_points[0][1]), p2=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+        dpg.draw_line(p1=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), p2=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
+        dpg.draw_line(p1=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), p2=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[0][0], bezier_points[0][1]), p2=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[3][0], bezier_points[3][1]), p2=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
         dpg.draw_line(p1=field_to_canvas(bezier_points[2][0], bezier_points[2][1]), p2=field_to_canvas(bezier_points[1][0], bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
-
+ 
 # Makes the field layout window
 def make_field_view():
     robot_width = 0.03
@@ -867,7 +841,13 @@ def connect_table_and_listeners(timeout=5):
 
     table_instance.addEntryListener(on_networktables_change)
 
-def sample_path():
+def red_speaker_path():
+    draw_path(red_speaker_cords)
+def blue_speaker_path():
+    draw_path(blue_speaker_cords)
+def red_amp_path():
+    draw_path(red_amp_cords)
+def blue_amp_path():
     draw_path(blue_amp_cords)
 
 def main():
@@ -887,8 +867,20 @@ def main():
                 callback=lambda _: threading.Thread(target=connect_table_and_listeners, daemon=True).start()
             )
             dpg.add_button(
-                label="New Path",
-                callback=sample_path
+                label="Red Speaker Path",
+                callback=red_speaker_path
+            )
+            dpg.add_button(
+                label="Blue Speaker Path",
+                callback=blue_speaker_path
+            )
+            dpg.add_button(
+                label="Red Amp Path",
+                callback=red_amp_path
+            )
+            dpg.add_button(
+                label="Blue Amp Path",
+                callback=blue_amp_path
             )
             dpg.add_button(
                 label="Manual Theme Edit",
