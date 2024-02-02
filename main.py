@@ -2,7 +2,6 @@ from networktables.util import ChooserControl
 from networktables import NetworkTables
 from networktables import NetworkTablesInstance
 import dearpygui.dearpygui as dpg
-import shapely.geometry as sp
 import numpy as np
 from scipy.special import comb
 import threading
@@ -92,14 +91,7 @@ def field_y_to_canvas_y(y):
     return normalized_y
 
 
-game_field_rectangle = sp.Polygon(
-    [
-        (0, -4),
-        (16.54175, -4),
-        (16.54175, 12),
-        (0, 12)
-    ]
-)
+
 
 
 def path_to_cubic_points(path, curvieness):
