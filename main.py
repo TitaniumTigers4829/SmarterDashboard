@@ -20,6 +20,7 @@ open_widgets = {
     "auto_selector": None,
     "mode_indicator": None,
     "path_detection": None,
+    "auto_note_selector": None,
 }
 # Global variable to see if it's connected
 connection_status = False
@@ -290,7 +291,6 @@ def make_orientation():
             with dpg.menu(label="Settings"):
                 dpg.add_checkbox(label="Show Grid", tag="s_show_grid", default_value=True)
                 dpg.add_checkbox(label="Show Axis", tag="s_show_axis", default_value=True)
-
         # Create Items
         with dpg.group(horizontal=True):
             dpg.add_text(tag="orientation_pitch_text", default_value=f"Pitch: {robot_odometry['pitch']} deg".rjust(18))
@@ -364,6 +364,7 @@ def make_orientation():
             "s_show_axis", 
             callback=lambda x: dpg.configure_item("axis_3d", show=dpg.get_value(x))
         )
+
 
         # Make all necessary connections for proper resizing
         with dpg.item_handler_registry(tag="orientation_resize_handler"):
@@ -604,6 +605,8 @@ def draw_path(path_to_place):
         if xvals_second[0] != 0:
             for i in range(len(xvals_second)):
                 dpg.draw_circle((field_x_to_canvas_x(xvals_second[i-1]), field_y_to_canvas_y(yvals_second[i-1])), 4, color=(155, 155, 255), fill=(155, 155, 255, 200))
+  
+  
 
     with dpg.draw_node(tag="robot_bezier_points", parent="field_robot_pass", show=True):
         # draws the robot nodes
@@ -628,6 +631,32 @@ def draw_path(path_to_place):
             dpg.draw_line(p1=field_to_canvas(second_bezier_points[3][0], second_bezier_points[3][1]), p2=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
             dpg.draw_line(p1=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), p2=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
        
+
+# makes the auto note selector
+def make_auto_note_selector():
+    note_choices = []
+
+
+    if open_widgets["auto_note_selector"] is not None:
+        dpg.delete_item(open_widgets["auto_note_selector"])
+        dpg.delete_item(item="field_drawlist")
+        dpg.delete_item(item="field_resize_handler")
+
+    with dpg.window(label="Auto Note Selector", tag="auto_note_selector", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=800) as auto_note_selector:
+        # Attach field view to the global widgets
+        open_widgets["auto_note_selector"] = auto_note_selector    
+        dpg.set_item_pos("auto_note_selector", (0,0))
+        # Make the menu for the window
+        with dpg.menu_bar(label="Field Menu", tag="auto_note_selector"):
+            with dpg.menu(label="Field Settings"):
+                dpg.add_checkbox(label="Flip Field", tag="fs_flip_field")
+
+        with dpg.drawlist(width=100, height=100, tag="auto_drawlist"):
+            dpg.draw_image(texture_tag="field", tag="field_image", pmin=(0, 0), pmax=(field_width, field_height))
+   
+   
+
+
 # Makes the field layout window
 def make_field_view():
     robot_width = 0.03
@@ -667,16 +696,15 @@ def make_field_view():
         with dpg.menu_bar(label="Field Menu", tag="field_menu"):
             with dpg.menu(label="Field Settings"):
                 dpg.add_checkbox(label="Flip Field", tag="fs_flip_field")
+           
+            with dpg.menu(label="Auto Builder"):
+                dpg.add_checkbox(label="Build Auto", tag="build_auto", default_value=False)
 
             with dpg.menu(label="Robot Settings"):
                 dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
                 dpg.add_checkbox(label="Show Limelight Estimate", tag="rs_show_limelight", default_value=False)
 
-            with dpg.menu(label="Path Settings"):
-                dpg.add_checkbox(label="Show Path", tag="ps_show_path", default_value=False)
-                dpg.add_checkbox(label="Show Waypoints", tag="ps_show_waypoints", default_value=False)
-                dpg.add_checkbox(label="Show Handles", tag="ps_show_handles", default_value=False)
-        
+      
         # Create items
         with dpg.drawlist(width=100, height=100, tag="field_drawlist"):
             dpg.draw_image(texture_tag="field", tag="field_image", pmin=(0, 0), pmax=(field_width, field_height))
@@ -689,7 +717,23 @@ def make_field_view():
                 with dpg.draw_node(tag="field_robot", show=True):
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
+               
+                with dpg.draw_node(tag="auto_builder", show=False):
+                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(4)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="blue_note_1")
+                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(6.85)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="blue_note_2")
+                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(9.7)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="blue_note_3")
                     
+                    dpg.draw_circle((field_x_to_canvas_x(13.66), field_y_to_canvas_y(4)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="red_note_1")
+                    dpg.draw_circle((field_x_to_canvas_x(13.66), field_y_to_canvas_y(6.85)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="red_note_2")
+                    dpg.draw_circle((field_x_to_canvas_x(13.66), field_y_to_canvas_y(9.7)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="red_note_3")
+
+                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(10.55)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="note_4")
+                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(7.3)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="note_5")
+                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(4)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="note_6")
+                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(0.7)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="note_7")
+                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(-2.55)), radius=10, thickness=2, color=(255, 255, 255), fill=(255, 255, 255, 100), tag="note_8")
+
+   
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
 
     # Make all necessary callback functions
@@ -733,6 +777,10 @@ def make_field_view():
     # Make all necessary connections for settings to work
     dpg.set_item_callback("fs_flip_field", callback=drawlist_resize)
     dpg.set_item_callback(
+        "build_auto",
+        callback=lambda x: dpg.configure_item("auto_builder", show=dpg.get_value(x))
+    )
+    dpg.set_item_callback(
         "rs_show_robot",
         callback=lambda x: dpg.configure_item("field_robot", show=dpg.get_value(x))
     )
@@ -740,18 +788,7 @@ def make_field_view():
         "rs_show_limelight",
         callback=lambda x: dpg.configure_item("limelight_robot", show=dpg.get_value(x))
     )
-    dpg.set_item_callback(
-        "ps_show_path",
-        callback=lambda x: dpg.configure_item("robot_path", show=dpg.get_value(x))
-    )
-    dpg.set_item_callback(
-        "ps_show_waypoints",
-        callback=lambda x: dpg.configure_item("robot_points", show=dpg.get_value(x))
-    )
-    dpg.set_item_callback(
-        "ps_show_handles",
-        callback=lambda x: dpg.configure_item("robot_handles", show=dpg.get_value(x))
-    )
+
 
     # Make all necessary connections for proper resizing
     with dpg.item_handler_registry(tag="field_resize_handler"):
