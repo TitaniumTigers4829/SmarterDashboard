@@ -6,9 +6,13 @@ from tkinter import ttk
 from tkinter import filedialog
 import csv
 import pandas as pd
-def load_match_data(event=None):
+def load_match_data():
     filename = filedialog.askopenfilename()
+    colNames = ["Timestamp", "Name", "Value"]
+    dataFrame = pd.read_csv(filename, names=colNames)
+    dataFrame = dataFrame[1:]
 
-    dataframe = pd.read_csv(filename)
-    red_or_blue = dataframe.query("NT:/FMSInfo/IsRedAlliance")
-    print(red_or_blue)
+    red_or_blue = dataFrame.query("Name == 'NT:/FMSInfo/IsRedAlliance'")["Value"].item()
+    match_number = dataFrame.query("Name == 'NT:/FMSInfo/MatchNumber'")["Value"].item()
+    station_number = dataFrame.query("Name == 'NT:/FMSInfo/StationNumber'")["Value"].item()
+    print('Alliance Color = ', red_or_blue, 'Match Number = ', match_number, 'Driver Station ', station_number)
