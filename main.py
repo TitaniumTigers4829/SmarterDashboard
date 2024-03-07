@@ -7,7 +7,7 @@ from scipy.special import comb
 import threading
 import logging
 import time
-
+from loadmatchdata import load_match_data
 # Initialization
 dpg.create_context()
 dpg.configure_app(docking=True, docking_space=True)
@@ -903,6 +903,10 @@ def main():
             dpg.add_button(
                 label="Attempt Reconnect", 
                 callback=lambda _: threading.Thread(target=connect_table_and_listeners, daemon=True).start()
+            )
+            dpg.add_button(
+                label="Load Match Data",
+                callback=load_match_data
             )
             dpg.add_button(
                 label="Red Speaker Path",
