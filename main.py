@@ -7,7 +7,7 @@ from scipy.special import comb
 import threading
 import logging
 import time
-from loadmatchdata import load_match_data
+from loadmatchdata import get_match_data, get_initial_match_data
 # Initialization
 dpg.create_context()
 dpg.configure_app(docking=True, docking_space=True)
@@ -16,6 +16,7 @@ dpg.create_viewport(title="4829 SmarterDashboard", width=1300, height=800)
 # Create a global dictionary to store if windows are already open
 open_widgets = {
     "field_view": None,
+    "replay_view": None,
     "orientation": None,
     "auto_selector": None,
     "mode_indicator": None,
@@ -655,6 +656,136 @@ def make_auto_note_selector():
             dpg.draw_image(texture_tag="field", tag="field_image", pmin=(0, 0), pmax=(field_width, field_height))
    
    
+def load_match_data():
+    initial_data, pose_data = get_match_data()
+    print(initial_data)
+    print(pose_data)
+
+def make_replay_view():
+    robot_width = 0.03
+    robot_height = 0.03
+
+    robot_vertices = [
+        # Box
+        [-robot_width, -robot_height],
+        [ robot_width, -robot_height],
+        [ robot_width,  robot_height],
+        [-robot_width,  robot_height],
+        [-robot_width, -robot_height],
+    ]
+    arrow_vertices = [
+        # Arrow
+        [0, -robot_height * 0.8],
+        [0,  robot_height * 0.25],
+        [-robot_width * 0.35, robot_height * 0.25],
+        [0,  robot_height * 0.8],
+        [robot_width * 0.35, robot_height * 0.25],
+        [0,  robot_height * 0.25],
+    ]
+    global open_widgets
+    
+    if open_widgets["replay_view"] is not None:
+        
+        
+        dpg.delete_item(open_widgets["replay_view"])
+        dpg.delete_item(item="replay_drawlist")
+        dpg.delete_item(item="replay_resize_handler")
+        
+        
+
+    # Make the window
+    with dpg.window(label="Replay View", tag="replay_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=800) as replay_view:
+        # Attach replay view to the global widgets
+        open_widgets["replay_view"] = replay_view
+        dpg.set_item_pos("replay_view", (0,0))
+        # Make the menu for the window
+        with dpg.menu_bar(label="Replay Menu", tag="replay_menu"):
+            with dpg.menu(label="Replay Settings"):
+                dpg.add_checkbox(label="Flip Replay", tag="fs_flip_replay")
+           
+
+            with dpg.menu(label="Robot Settings"):
+                dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
+                dpg.add_checkbox(label="Show Limelight Estimate", tag="rs_show_limelight", default_value=False)
+
+      
+        # Create items
+        with dpg.drawlist(width=100, height=100, tag="replay_drawlist"):
+            dpg.draw_image(texture_tag="field", tag="replay_image", pmin=(0, 0), pmax=(field_width, field_height))
+
+            with dpg.draw_layer(tag="replay_robot_pass", depth_clipping=False, perspective_divide=True):
+                # with dpg.draw_node(tag="limelight_robot", show=True):
+                #     dpg.draw_polygon(robot_vertices, thickness=3, color=(14, 200, 14, 50), fill=(200, 255, 200, 10))
+                #     dpg.draw_polygon(arrow_vertices, thickness=3, color=(14, 255, 14, 50), fill=(15, 200, 15, 50))
+
+                with dpg.draw_node(tag="replay_robot", show=True):
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
+                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
+               
+   
+            dpg.set_clip_space("replay_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
+
+    # Make all necessary callback functions
+    def drawlist_resize(sender, appdata):
+        width, height = dpg.get_item_rect_size("replay_view")
+        # Annoying hack to get things sizing properly
+        width -= 2 * 8
+        height -= 7 * 8
+        dpg.configure_item("replay_drawlist", width=width, height=height)
+
+        # Dynamic replay image resizing and positioning
+        new_replay_width = width
+        new_replay_height = height
+        if (new_replay_width > new_replay_height * field_aspect):
+            new_replay_width = height * field_aspect
+
+        elif (new_replay_width < new_replay_height * field_aspect):
+            new_replay_height = width * (1 / field_aspect)
+
+        replay_min = [(width - new_replay_width) // 2, (height - new_replay_height) // 2]
+        replay_max = [replay_min[0] + new_replay_width, replay_min[1] + new_replay_height]
+
+        if (dpg.get_value("fs_flip_replay")):
+            tmp = replay_min[0]
+            replay_min[0] = replay_max[0]
+            replay_max[0] = tmp
+
+        dpg.configure_item("replay_image", pmin=replay_min, pmax=replay_max)
+
+        # Configure the clip space for the robot
+        dpg.set_clip_space(
+            item="replay_robot_pass", 
+            top_left_x=((width - new_replay_width) // 2), 
+            top_left_y=((height - new_replay_height) // 2), 
+            width=new_replay_width, 
+            height=new_replay_height,
+            min_depth=-1.0,
+            max_depth=1.0
+        )
+
+    # Make all necessary connections for settings to work
+    dpg.set_item_callback("fs_flip_replay", callback=drawlist_resize)
+    dpg.set_item_callback(
+        "build_auto",
+        callback=lambda x: dpg.configure_item("auto_builder", show=dpg.get_value(x))
+    )
+    dpg.set_item_callback(
+        "rs_show_robot",
+        callback=lambda x: dpg.configure_item("replay_robot", show=dpg.get_value(x))
+    )
+    dpg.set_item_callback(
+        "rs_show_limelight",
+        callback=lambda x: dpg.configure_item("limelight_robot", show=dpg.get_value(x))
+    )
+
+
+    # Make all necessary connections for proper resizing
+    with dpg.item_handler_registry(tag="replay_resize_handler"):
+        dpg.add_item_resize_handler(callback=drawlist_resize)
+
+    dpg.bind_item_handler_registry("replay_view", "replay_resize_handler")
+        
+
 
 
 # Makes the field layout window
@@ -680,7 +811,7 @@ def make_field_view():
         [0,  robot_height * 0.25],
     ]
 
-    global open_widgets, path_to_red_amp
+    global open_widgets
 
     if open_widgets["field_view"] is not None:
         dpg.delete_item(open_widgets["field_view"])
@@ -700,11 +831,6 @@ def make_field_view():
             with dpg.menu(label="Auto Builder"):
                 dpg.add_checkbox(label="Build Auto", tag="build_auto", default_value=False)
 
-            with dpg.menu(label="Robot Settings"):
-                dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
-                dpg.add_checkbox(label="Show Limelight Estimate", tag="rs_show_limelight", default_value=False)
-
-      
         # Create items
         with dpg.drawlist(width=100, height=100, tag="field_drawlist"):
             dpg.draw_image(texture_tag="field", tag="field_image", pmin=(0, 0), pmax=(field_width, field_height))
@@ -780,14 +906,7 @@ def make_field_view():
         "build_auto",
         callback=lambda x: dpg.configure_item("auto_builder", show=dpg.get_value(x))
     )
-    dpg.set_item_callback(
-        "rs_show_robot",
-        callback=lambda x: dpg.configure_item("field_robot", show=dpg.get_value(x))
-    )
-    dpg.set_item_callback(
-        "rs_show_limelight",
-        callback=lambda x: dpg.configure_item("limelight_robot", show=dpg.get_value(x))
-    )
+
 
 
     # Make all necessary connections for proper resizing
@@ -804,7 +923,7 @@ def draw_call_update():
     yaw = robot_odometry["yaw"] * np.pi / 180
 
     x, y = field_to_canvas(robot_odometry["field_x"], robot_odometry["field_y"])
-
+ 
     limelight_pitch = limelight_odometry["pitch"] * np.pi / 180
     limelight_x, limelight_y = field_to_canvas(limelight_odometry["field_x"], limelight_odometry["field_y"])
 
@@ -827,7 +946,6 @@ def draw_call_update():
         field_scale = dpg.create_scale_matrix([1, field_aspect])
         field_rotation = dpg.create_rotation_matrix(np.pi / 2 - pitch, [0, 0, -1])
         field_position = dpg.create_translation_matrix([x, y])
-
         limelight_scale = dpg.create_scale_matrix([1, field_aspect])
         limelight_rotation = dpg.create_rotation_matrix(np.pi / 2 - limelight_pitch, [0, 0, -1])
         limelight_position = dpg.create_translation_matrix([limelight_x, limelight_y])
@@ -844,6 +962,21 @@ def draw_call_update():
                 draw_path(blue_speaker_cords)
             elif("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
                 draw_path(blue_amp_cords)
+                
+    if open_widgets["replay_view"] is not None:
+        replay_x, replay_y = field_to_canvas(8.25, 4)
+        replay_pitch = (0)
+        replay_rotation = dpg.create_rotation_matrix(np.pi / 2 - replay_pitch, [0, 0, -1])
+        replay_position = dpg.create_translation_matrix([replay_x, replay_y])
+        replay_scale = dpg.create_scale_matrix([1, field_aspect])
+
+        limelight_scale = dpg.create_scale_matrix([1, field_aspect])
+        limelight_rotation = dpg.create_rotation_matrix(np.pi / 2 - limelight_pitch, [0, 0, -1])
+        limelight_position = dpg.create_translation_matrix([limelight_x, limelight_y])
+        dpg.apply_transform("replay_robot", replay_scale*replay_position*replay_rotation)
+        dpg.apply_transform("limelight_robot", limelight_scale*limelight_position*limelight_rotation)
+
+
 
 # Target thread to make some connections
 def connect_table_and_listeners(timeout=5):
@@ -895,6 +1028,7 @@ def main():
             dpg.add_menu_item(label="Enable Something")
         with dpg.menu(label="Widgets"):
             dpg.add_menu_item(label="Field View", callback=make_field_view)
+            dpg.add_menu_item(label="Replay", callback=make_replay_view)
             dpg.add_menu_item(label="Orientation", callback=make_orientation)
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
             dpg.add_menu_item(label="Mode Indicator", callback=make_mode_indicator)
@@ -907,22 +1041,6 @@ def main():
             dpg.add_button(
                 label="Load Match Data",
                 callback=load_match_data
-            )
-            dpg.add_button(
-                label="Red Speaker Path",
-                callback=red_speaker_path
-            )
-            dpg.add_button(
-                label="Blue Speaker Path",
-                callback=blue_speaker_path
-            )
-            dpg.add_button(
-                label="Red Amp Path",
-                callback=red_amp_path
-            )
-            dpg.add_button(
-                label="Blue Amp Path",
-                callback=blue_amp_path
             )
             dpg.add_button(
                 label="Manual Theme Edit",
