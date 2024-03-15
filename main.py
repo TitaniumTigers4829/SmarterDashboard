@@ -4,6 +4,7 @@ from networktables import NetworkTablesInstance
 import dearpygui.dearpygui as dpg
 import numpy as np
 from scipy.special import comb
+import re
 import threading
 import logging
 import time
@@ -657,6 +658,7 @@ def make_auto_note_selector():
    
    
 def load_match_data():
+    global initial_data, pose_data
     initial_data, pose_data = get_match_data()
     print(initial_data)
     print(pose_data)
@@ -683,6 +685,7 @@ def make_replay_view():
         [robot_width * 0.35, robot_height * 0.25],
         [0,  robot_height * 0.25],
     ]
+
     global open_widgets, input_value
     
     if open_widgets["replay_view"] is not None:
@@ -707,17 +710,12 @@ def make_replay_view():
             with dpg.menu(label="Robot Settings"):
                 dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
                 dpg.add_checkbox(label="Show Limelight Estimate", tag="rs_show_limelight", default_value=False)
-
-        input_value = dpg.add_slider_float(width=1080, height=10, max_value=len(pose_data))
+        input_value = dpg.add_slider_int(width=1080, height=10, max_value=len(pose_data))
         # Create items
         with dpg.drawlist(width=100, height=100, tag="replay_drawlist"):
             dpg.draw_image(texture_tag="field", tag="replay_image", pmin=(0, 0), pmax=(field_width, field_height))
 
             with dpg.draw_layer(tag="replay_robot_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="limelight_robot", show=True):
-                    dpg.draw_polygon(robot_vertices, thickness=3, color=(14, 200, 14, 50), fill=(200, 255, 200, 10))
-                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(14, 255, 14, 50), fill=(15, 200, 15, 50))
-
                 with dpg.draw_node(tag="replay_robot", show=True):
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
@@ -772,10 +770,8 @@ def make_replay_view():
         "rs_show_robot",
         callback=lambda x: dpg.configure_item("replay_robot", show=dpg.get_value(x))
     )
-    dpg.set_item_callback(
-        "rs_show_limelight",
-        callback=lambda x: dpg.configure_item("limelight_robot", show=dpg.get_value(x))
-    )
+  
+
 
 
     # Make all necessary connections for proper resizing
@@ -963,20 +959,22 @@ def draw_call_update():
                 draw_path(blue_amp_cords)
                 
     if open_widgets["replay_view"] is not None:
-        current_pose = input_value
-        input_value 
-        print(current_pose)
-        replay_x, replay_y = field_to_canvas(8.25, 4)
-        replay_pitch = 0
+       
+        #I HATE STRING PARSING
+        current_pose_entry = dpg.get_value(input_value)
+        current_pose_x = pose_data.iat[current_pose_entry, 2].strip("Pose2d(Translation2d(X: ").split(",", 1)
+        current_pose_y = current_pose_x[1].strip("Y: ").split("),", 1)
+        current_pose_rads = current_pose_y[1].strip("Rotation2d(Rads: ").split(",", 1)
+        current_pose_degrees = current_pose_rads[1].strip("Deg: ").split("))", 1)
+        print(current_pose_x[0], current_pose_y[0], current_pose_degrees[0])
+        
+        replay_x, replay_y,  = field_to_canvas(float(current_pose_x[0]), float(current_pose_y[0]))
+        replay_pitch = float(current_pose_degrees[0])
         replay_rotation = dpg.create_rotation_matrix(np.pi / 2 - replay_pitch, [0, 0, -1])
         replay_position = dpg.create_translation_matrix([replay_x, replay_y])
         replay_scale = dpg.create_scale_matrix([1, field_aspect])
 
-        limelight_scale = dpg.create_scale_matrix([1, field_aspect])
-        limelight_rotation = dpg.create_rotation_matrix(np.pi / 2 - limelight_pitch, [0, 0, -1])
-        limelight_position = dpg.create_translation_matrix([limelight_x, limelight_y])
-        # dpg.apply_transform("replay_robot", replay_scale*replay_position*replay_rotation)
-        # dpg.apply_transform("limelight_robot", limelight_scale*limelight_position*limelight_rotation)
+        dpg.apply_transform("replay_robot", replay_scale*replay_position*replay_rotation)
 
 
 
@@ -1013,6 +1011,7 @@ def connect_table_and_listeners(timeout=5):
     dpg.configure_item(item="auto_selector", items=chooser_options)
 
     table_instance.addEntryListener(on_networktables_change)
+
 
 def red_speaker_path():
     draw_path(red_speaker_cords)
