@@ -28,12 +28,4 @@ def get_match_data():
 
 def get_pose_data(dataFrame):
     pose_data = dataFrame.query("Name == 'odometry'")
-    # formatted_pose_data = pd.DataFrame(columns=['X', 'Y', 'Rot'])
-
-    # for i in len(pose_data):
-    #     current_pose = pose_data.iloc[[i]]
-    #     split_data = current_pose.split(": ", 3)
-    #     print(split_data)
-        
-    #     formatted_pose_data.append()
     return(pose_data)

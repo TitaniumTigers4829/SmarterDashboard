@@ -710,7 +710,7 @@ def make_replay_view():
             with dpg.menu(label="Robot Settings"):
                 dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
                 dpg.add_checkbox(label="Show Limelight Estimate", tag="rs_show_limelight", default_value=False)
-        input_value = dpg.add_slider_int(width=1080, height=10, max_value=len(pose_data))
+        input_value = dpg.add_slider_int(width=1065, height=10, max_value=len(pose_data), clamped=True)
         # Create items
         with dpg.drawlist(width=100, height=100, tag="replay_drawlist"):
             dpg.draw_image(texture_tag="field", tag="replay_image", pmin=(0, 0), pmax=(field_width, field_height))
@@ -962,11 +962,10 @@ def draw_call_update():
        
         #I HATE STRING PARSING
         current_pose_entry = dpg.get_value(input_value)
-        current_pose_x = pose_data.iat[current_pose_entry, 2].strip("Pose2d(Translation2d(X: ").split(",", 1)
+        current_pose_x = pose_data.iat[(current_pose_entry-1), 2].strip("Pose2d(Translation2d(X: ").split(",", 1)
         current_pose_y = current_pose_x[1].strip("Y: ").split("),", 1)
-        current_pose_rads = current_pose_y[1].strip("Rotation2d(Rads: ").split(",", 1)
+        current_pose_rads = current_pose_y[1].strip("Rotation2d(Rads: ").split(",", 1) # i really hate string parsing this variable serves no purpose
         current_pose_degrees = current_pose_rads[1].strip("Deg: ").split("))", 1)
-        print(current_pose_x[0], current_pose_y[0], current_pose_degrees[0])
         
         replay_x, replay_y,  = field_to_canvas(float(current_pose_x[0]), float(current_pose_y[0]))
         replay_pitch = float(current_pose_degrees[0])
