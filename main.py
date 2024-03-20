@@ -8,7 +8,7 @@ import re
 import threading
 import logging
 import time
-from loadmatchdata import get_match_data, get_initial_match_data
+from loadmatchdata import get_match_data
 # Initialization
 dpg.create_context()
 dpg.configure_app(docking=True, docking_space=True)
@@ -658,16 +658,15 @@ def make_auto_note_selector():
    
    
 def load_match_data():
-    global initial_data, pose_data
-    initial_data, pose_data = get_match_data()
-    print(initial_data)
+    global  pose_data
+    pose_data = get_match_data()
     print(pose_data)
-    return (initial_data, pose_data)
+    return ( pose_data)
 
 def make_replay_view():
     robot_width = 0.03
     robot_height = 0.03
-    initial_data, pose_data = load_match_data()
+    pose_data = load_match_data()
     robot_vertices = [
         # Box
         [-robot_width, -robot_height],
@@ -962,9 +961,9 @@ def draw_call_update():
        
         #I HATE STRING PARSING
         current_pose_entry = dpg.get_value(input_value)
-        current_pose_x = pose_data.iat[(current_pose_entry-1), 2].strip("Pose2d(Translation2d(X: ").split(",", 1)
-        current_pose_y = current_pose_x[1].strip("Y: ").split("),", 1)
-        current_pose_rads = current_pose_y[1].strip("Rotation2d(Rads: ").split(",", 1) # i really hate string parsing this variable serves no purpose
+        current_pose_x = pose_data.iat[(current_pose_entry -1), 2].strip("Pose2d(Translation2d(X: ").split(";", 1)
+        current_pose_y = current_pose_x[1].strip("Y: ").split(");", 1)
+        current_pose_rads = current_pose_y[1].strip("Rotation2d(Rads: ").split(";", 1) # i really hate string parsing this variable serves no purpose
         current_pose_degrees = current_pose_rads[1].strip("Deg: ").split("))", 1)
         
         replay_x, replay_y,  = field_to_canvas(float(current_pose_x[0]), float(current_pose_y[0]))
