@@ -18,10 +18,11 @@ dpg.create_viewport(title="4829 SmarterDashboard", width=1300, height=800)
 open_widgets = {
     "field_view": None,
     "replay_view": None,
+    "amplification": None,
     "orientation": None,
     "auto_selector": None,
     "mode_indicator": None,
-    "path_detection": None,
+    "note_in_robot": None,
     "auto_note_selector": None,
 }
 # Global variable to see if it's connected
@@ -171,9 +172,9 @@ def on_networktables_change(source, key, value, isNew):
         case "botPose":
             robot_odometry["field_x"] = value[0]
             robot_odometry["field_y"] = value[1]
-        case "canShoot":
-            dpg.configure_item(item="can_shoot", show=(value == "true"))
-            dpg.configure_item(item="can_shoot", show=(value == "false"))
+        case "screwed":
+            dpg.configure_item(item="can_shoot", show=(value != "true"))
+            dpg.configure_item(item="can_shoot", show=(value != "false"))
         case "pathData[0]":
             dpg.configure_item(item="path_detected", show=(value == "true"))
             dpg.configure_item(item="path_detected", show=(value == "false"))
@@ -187,7 +188,10 @@ def on_networktables_change(source, key, value, isNew):
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
             limelight_odometry["pitch"] = value[2]
-
+        case "amplification":
+            if "amplified" == True:
+                start_countdown()
+            
 # Set up theme
 def set_theme():
     with dpg.theme() as global_theme:
@@ -374,6 +378,8 @@ def make_orientation():
 
         dpg.bind_item_handler_registry("orientation", "orientation_resize_handler")
 
+
+
 # Makes the mode indicator
 def make_mode_indicator():
     global open_widgets, robot_odometry
@@ -383,7 +389,7 @@ def make_mode_indicator():
         dpg.delete_item(item="indicator_drawlist")
         dpg.delete_item(item="indicator_resize_handler")
 
-    with dpg.window(label="Can Shooter Shoot", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
+    with dpg.window(label="Screwed", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
         dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+180)))
@@ -433,22 +439,22 @@ def make_mode_indicator():
     dpg.bind_item_handler_registry("mode_indicator", "indicator_resize_handler")
 
 
-def make_path_detection():
+def make_note_in_robot():
     global open_widgets, robot_odometry
 
-    if open_widgets["path_detection"] is not None:
-        dpg.delete_item(open_widgets["path_detection"])
+    if open_widgets["note_in_robot"] is not None:
+        dpg.delete_item(open_widgets["note_in_robot"])
         dpg.delete_item(item="path_drawlist")
         dpg.delete_item(item="path_resize_handler")
 
-    with dpg.window(label="Auto Path Detection", tag="path_detection", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as detection:
+    with dpg.window(label="Note in Robot", tag="note_in_robot", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as detection:
         # Attach orientation to the global widgets
-        open_widgets["path_detection"] = detection
+        open_widgets["note_in_robot"] = detection
         dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+80)))
 
         with dpg.drawlist(width=100, height=100, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="path_detected", show=False):
+                with dpg.draw_node(tag="path_detected", show=True):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
@@ -457,7 +463,7 @@ def make_path_detection():
                         fill=(144, 238, 144, 10)
                         )
 
-                with dpg.draw_node(tag="path_not_detected", show=True):
+                with dpg.draw_node(tag="path_not_detected", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=25, 
@@ -469,7 +475,7 @@ def make_path_detection():
             dpg.set_clip_space("path_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
 
     def drawlist_resize(sender, appdata):
-        width, height = dpg.get_item_rect_size("path_detection")
+        width, height = dpg.get_item_rect_size("note_in_robot")
         width -= 2 * 8
         height -= 5 * 8
         dpg.configure_item("path_drawlist", width=width, height=height)
@@ -486,32 +492,32 @@ def make_path_detection():
             max_depth=5.0
         )
     # Make all necessary connections for proper resizing
-    with dpg.item_handler_registry(tag="path_detection_resize_handler"):
+    with dpg.item_handler_registry(tag="note_in_robot_resize_handler"):
         dpg.add_item_resize_handler(callback=drawlist_resize)
 
-    dpg.bind_item_handler_registry("path_detection", "path_detection_resize_handler")
+    dpg.bind_item_handler_registry("note_in_robot", "note_in_robot_resize_handler")
 
 # Makes the countdown
-def make_round_countdown():
+def make_amp_countdown():
     global open_widgets
 
-    with dpg.window(label="Round Countdown", tag="round_countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as round_countdown:
-        dpg.set_item_pos(round_countdown, (dpg.get_viewport_width()-(dpg.get_item_width(round_countdown)+20),dpg.get_viewport_height()-(dpg.get_item_height(round_countdown)+280)))
-
+    with dpg.window(label="Amplification Countdown", tag="amplification", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as amp_countdown:
+        dpg.set_item_pos(amp_countdown, (dpg.get_viewport_width()-(dpg.get_item_width(amp_countdown)+20),dpg.get_viewport_height()-(dpg.get_item_height(amp_countdown)+280)))
+        time_left = 0.00
         with dpg.drawlist(width=100, height=100, tag="countdown_drawlist"):
             with dpg.draw_layer(tag="countdown_pass", depth_clipping=False, perspective_divide=True):
-                dpg.draw_text(pos=(-0.6, 0.5), text="2:45", size=200, tag="round_countdown_text")
+                dpg.add_progress_bar(tag="amplification_progress_bar", height=10, width=10, name="Amp", source=time_left, default_value=0.50)
 
-        dpg.bind_item_font("round_countdown_text", clock_font)
+        dpg.bind_item_font("amp_countdown_text", clock_font)
 
         dpg.set_clip_space("countdown_pass", 0, 0, 100, 100, -5.0, 5.0)
 
         def drawlist_resize(sender, appdata):
-            width, height = dpg.get_item_rect_size("round_countdown")
+            width, height = dpg.get_item_rect_size("amp_countdown")
             width -= 2 * 8
             height -= 5 * 8
             dpg.configure_item("countdown_drawlist", width=width, height=height)
-            dpg.configure_item("round_countdown_text", size=min(width / 2.3, height / 1.2))
+            dpg.configure_item("amp_countdown_text", size=min(width / 2.3, height / 1.2))
 
             # Drawing space
             drawing_size = min(width, height)
@@ -529,7 +535,7 @@ def make_round_countdown():
         with dpg.item_handler_registry(tag="countdown_resize_handler"):
             dpg.add_item_resize_handler(callback=drawlist_resize)
 
-        dpg.bind_item_handler_registry("round_countdown", "countdown_resize_handler")
+        dpg.bind_item_handler_registry("amplification", "countdown_resize_handler")
 
 
 
@@ -587,6 +593,13 @@ def create_path(path_to_place):
     xvals, yvals = bezier_curve(first_spline_cubic_points, nTimes=100)
     # print(xvals[0], yvals[0])
     return(xvals, yvals, xvals_second, yvals_second, bezier_points, second_bezier_points)
+
+def start_countdown(Sender):
+    global time_left
+    time_left = 0.00
+    while time_left > 1.0:
+        dpg.set_value("amplification_progress_bar")
+        time_left == time_left + 1
 
 
 
@@ -956,7 +969,7 @@ def draw_call_update():
                 draw_path(blue_speaker_cords)
             elif("red_or_blue" == "blue") & ("speaker_or_amp" == "amp"):
                 draw_path(blue_amp_cords)
-                
+ 
     if open_widgets["replay_view"] is not None:
        
         #I HATE STRING PARSING
@@ -974,6 +987,7 @@ def draw_call_update():
 
         dpg.apply_transform("replay_robot", replay_scale*replay_position*replay_rotation)
 
+    
 
 
 # Target thread to make some connections
@@ -1031,7 +1045,7 @@ def main():
             dpg.add_menu_item(label="Orientation", callback=make_orientation)
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
             dpg.add_menu_item(label="Mode Indicator", callback=make_mode_indicator)
-            dpg.add_menu_item(label="Path Detection", callback=make_path_detection)
+            dpg.add_menu_item(label="Path Detection", callback=make_note_in_robot)
         with dpg.menu(label="Override"):
             dpg.add_button(
                 label="Attempt Reconnect", 
@@ -1053,9 +1067,9 @@ def main():
     # Make all the windows to start with
     make_auto_selector()
     make_field_view()
-    make_round_countdown()
+    make_amp_countdown()
     make_mode_indicator()
-    make_path_detection()
+    make_note_in_robot()
     make_orientation()
     # Setup
     dpg.setup_dearpygui()
