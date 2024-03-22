@@ -22,7 +22,7 @@ open_widgets = {
     "orientation": None,
     "auto_selector": None,
     "mode_indicator": None,
-    "note_in_robot": None,
+    "note_loaded": None,
     "auto_note_selector": None,
 }
 # Global variable to see if it's connected
@@ -175,22 +175,35 @@ def on_networktables_change(source, key, value, isNew):
         case "screwed":
             dpg.configure_item(item="can_shoot", show=(value != "true"))
             dpg.configure_item(item="can_shoot", show=(value != "false"))
-        case "pathData[0]":
-            dpg.configure_item(item="path_detected", show=(value == "true"))
-            dpg.configure_item(item="path_detected", show=(value == "false"))
-        case "pathData[1]":
-            dpg.configure_item(item="red_or_blue", show=(value == "red"))
-            dpg.configure_item(item="red_or_blue", show=(value == "blue"))
-        case "pathData[2]":
-            dpg.configure_item(item="speaker_or_amp", show=(value == "speaker"))
-            dpg.configure_item(item="speaker_or_amp", show=(value == "amp"))
+        # case "pathData[0]":
+        #     dpg.configure_item(item="path_detected", show=(value == "true"))
+        #     dpg.configure_item(item="path_detected", show=(value == "false"))
+        # case "pathData[1]":
+        #     dpg.configure_item(item="red_or_blue", show=(value == "red"))
+        #     dpg.configure_item(item="red_or_blue", show=(value == "blue"))
+        # case "pathData[2]":
+        #     dpg.configure_item(item="speaker_or_amp", show=(value == "speaker"))
+        #     dpg.configure_item(item="speaker_or_amp", show=(value == "amp"))
         case "limelight_pose":
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
             limelight_odometry["pitch"] = value[2]
-        case "countdown":
-            if "amplified" == True:
-                start_countdown()
+        case "isAmped":
+            if "isAmped" == True:
+                dpg.configure_item(item="countdown_progress_bar", value=(value =="ampTimeLeft"))
+        case "notePos":
+            dpg.configure_item(item="note_in_robot", show=(value == "0"))
+            dpg.configure_item(item="note_not_in_robot", show=(value != "0"))
+            dpg.configure_item(item="note_partly_in_robot", show=(value != "0"))
+            dpg.configure_item(item="note_in_robot", show=(value != "1"))
+            dpg.configure_item(item="note_not_in_robot", show=(value == "1"))
+            dpg.configure_item(item="note_partly_in_robot", show=(value != "1"))
+            dpg.configure_item(item="note_in_robot", show=(value != "2"))
+            dpg.configure_item(item="note_not_in_robot", show=(value != "2"))
+            dpg.configure_item(item="note_partly_in_robot", show=(value == "2"))
+
+
+            
             
 # Set up theme
 def set_theme():
@@ -247,7 +260,6 @@ def make_auto_selector():
         dpg.set_item_pos(auto_selector, (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector)+20),dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+380)))
 
         # Add items
-        dpg.add_text(default_value="Select Auto Path")
 
 
     # Attach necessary callbacks
@@ -389,10 +401,10 @@ def make_mode_indicator():
         dpg.delete_item(item="indicator_drawlist")
         dpg.delete_item(item="indicator_resize_handler")
 
-    with dpg.window(label="Screwed", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as indicator:
+    with dpg.window(label="Screwed", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=150) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
-        dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+180)))
+        dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+230)))
 
         with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
             with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
@@ -442,33 +454,41 @@ def make_mode_indicator():
 def make_note_in_robot():
     global open_widgets, robot_odometry
 
-    if open_widgets["note_in_robot"] is not None:
-        dpg.delete_item(open_widgets["note_in_robot"])
+    if open_widgets["note_loaded"] is not None:
+        dpg.delete_item(open_widgets["note_loaded"])
         dpg.delete_item(item="path_drawlist")
         dpg.delete_item(item="path_resize_handler")
 
-    with dpg.window(label="Note in Robot", tag="note_in_robot", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as detection:
+    with dpg.window(label="Note in Robot", tag="note_loaded", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=150) as detection:
         # Attach orientation to the global widgets
-        open_widgets["note_in_robot"] = detection
+        open_widgets["note_loaded"] = detection
         dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+80)))
 
-        with dpg.drawlist(width=100, height=100, tag="path_drawlist"):
+        with dpg.drawlist(width=200, height=150, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="path_detected", show=True):
+                with dpg.draw_node(tag="note_in_robot", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
-                        radius=25, 
+                        radius=(dpg.get_item_width(detection)/4), 
                         color=(5, 255, 5), 
                         thickness=5, 
                         fill=(144, 238, 144, 10)
                         )
 
-                with dpg.draw_node(tag="path_not_detected", show=False):
+                with dpg.draw_node(tag="note_not_in_robot", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
-                        radius=25, 
+                        radius=(dpg.get_item_width(detection)/4), 
                         color=(186, 0, 0), 
                         fill=(186, 0, 0, 50),
+                        thickness=5, 
+                        )
+                with dpg.draw_node(tag="note_partly_in_robot", show=True):
+                    dpg.draw_circle(
+                        center=(0,0), 
+                        radius=(dpg.get_item_width(detection)/4), 
+                        color=(252, 186, 3), 
+                        fill=(252, 186, 3, 50),
                         thickness=5, 
                         )
 
@@ -495,7 +515,7 @@ def make_note_in_robot():
     with dpg.item_handler_registry(tag="note_in_robot_resize_handler"):
         dpg.add_item_resize_handler(callback=drawlist_resize)
 
-    dpg.bind_item_handler_registry("note_in_robot", "note_in_robot_resize_handler")
+    dpg.bind_item_handler_registry("note_loaded", "note_in_robot_resize_handler")
 
 # Makes the countdown
 def make_amp_countdown():
@@ -594,14 +614,7 @@ def create_path(path_to_place):
     # print(xvals[0], yvals[0])
     return(xvals, yvals, xvals_second, yvals_second, bezier_points, second_bezier_points)
 
-def start_countdown():
-    global time_left
-    time_left = 1.00
-    while time_left >= 0.0:
-        dpg.set_value("countdown_progress_bar", time_left)
-        time_left -= 0.01
-        time.sleep(0.1)
-    dpg.set_value("countdown_progress_bar", 0)
+
 
 
 
@@ -830,7 +843,7 @@ def make_field_view():
         dpg.delete_item(item="field_resize_handler")
 
     # Make the window
-    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=730) as field_view:
+    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=650) as field_view:
         # Attach field view to the global widgets
         open_widgets["field_view"] = field_view
         dpg.set_item_pos("field_view", (0, 120))
