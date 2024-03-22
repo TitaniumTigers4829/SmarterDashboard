@@ -175,6 +175,8 @@ def on_networktables_change(source, key, value, isNew):
         case "screwed":
             dpg.configure_item(item="can_shoot", show=(value != "true"))
             dpg.configure_item(item="can_shoot", show=(value != "false"))
+            dpg.configure_item(item="can_not_shoot", show=(value == "true"))
+            dpg.configure_item(item="can_not_shoot", show=(value == "false"))
         # case "pathData[0]":
         #     dpg.configure_item(item="path_detected", show=(value == "true"))
         #     dpg.configure_item(item="path_detected", show=(value == "false"))
@@ -409,9 +411,8 @@ def make_mode_indicator():
         with dpg.drawlist(width=100, height=100, tag="indicator_drawlist"):
             with dpg.draw_layer(tag="mode_indicator_pass", depth_clipping=False, perspective_divide=True):
                 with dpg.draw_node(tag="can_shoot", show=False):
-                    dpg.draw_circle(
-                        center=(0,0), 
-                        radius=(dpg.get_item_height(indicator)/4), 
+                    dpg.draw_polygon(
+                        points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
                         color=(5, 255, 5), 
                         thickness=5, 
                         fill=(5, 94, 5, 50)
