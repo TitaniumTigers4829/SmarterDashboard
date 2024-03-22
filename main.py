@@ -510,7 +510,6 @@ def make_amp_countdown():
         dpg.set_item_pos(amp_countdown, (0, 0))
 
         dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=-1, height=-1)
-        dpg.add_button(label="click", callback=start_countdown)
 
 
         def drawlist_resize(sender, appdata):
@@ -598,10 +597,11 @@ def create_path(path_to_place):
 def start_countdown():
     global time_left
     time_left = 1.00
-    while time_left > 0.0:
+    while time_left >= 0.0:
         dpg.set_value("countdown_progress_bar", time_left)
         time_left -= 0.01
         time.sleep(0.1)
+    dpg.set_value("countdown_progress_bar", 0)
 
 
 
