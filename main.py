@@ -18,7 +18,7 @@ dpg.create_viewport(title="4829 SmarterDashboard", width=1300, height=800)
 open_widgets = {
     "field_view": None,
     "replay_view": None,
-    "amplification": None,
+    "countdown": None,
     "orientation": None,
     "auto_selector": None,
     "mode_indicator": None,
@@ -188,7 +188,7 @@ def on_networktables_change(source, key, value, isNew):
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
             limelight_odometry["pitch"] = value[2]
-        case "amplification":
+        case "countdown":
             if "amplified" == True:
                 start_countdown()
             
@@ -499,18 +499,19 @@ def make_note_in_robot():
 
 # Makes the countdown
 def make_amp_countdown():
-    global open_widgets
+    global open_widgets, robot_odometry
 
-    with dpg.window(label="Amplification Countdown", tag="amplification", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=100) as amp_countdown:
-        dpg.set_item_pos(amp_countdown, (dpg.get_viewport_width()-(dpg.get_item_width(amp_countdown)+20),dpg.get_viewport_height()-(dpg.get_item_height(amp_countdown)+280)))
-        time_left = 0.00
-        with dpg.drawlist(width=100, height=100, tag="countdown_drawlist"):
-            with dpg.draw_layer(tag="countdown_pass", depth_clipping=False, perspective_divide=True):
-                dpg.add_progress_bar(tag="amplification_progress_bar", height=10, width=10, name="Amp", source=time_left, default_value=0.50)
+    if open_widgets["countdown"] is not None:
+        dpg.delete_item(open_widgets["countdown"])
+        dpg.delete_item(item="countdown_drawlist")
+        dpg.delete_item(item="countdown_resize_handler")
 
-        dpg.bind_item_font("amp_countdown_text", clock_font)
+    with dpg.window(label="Countdown", tag="countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=20) as amp_countdown:
+        dpg.set_item_pos(amp_countdown, (0, 0))
 
-        dpg.set_clip_space("countdown_pass", 0, 0, 100, 100, -5.0, 5.0)
+        dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=-1, height=-1)
+        dpg.add_button(label="click", callback=start_countdown)
+
 
         def drawlist_resize(sender, appdata):
             width, height = dpg.get_item_rect_size("amp_countdown")
@@ -535,7 +536,7 @@ def make_amp_countdown():
         with dpg.item_handler_registry(tag="countdown_resize_handler"):
             dpg.add_item_resize_handler(callback=drawlist_resize)
 
-        dpg.bind_item_handler_registry("amplification", "countdown_resize_handler")
+        dpg.bind_item_handler_registry("countdown", "countdown_resize_handler")
 
 
 
@@ -594,12 +595,15 @@ def create_path(path_to_place):
     # print(xvals[0], yvals[0])
     return(xvals, yvals, xvals_second, yvals_second, bezier_points, second_bezier_points)
 
-def start_countdown(Sender):
+def start_countdown():
     global time_left
-    time_left = 0.00
-    while time_left > 1.0:
-        dpg.set_value("amplification_progress_bar")
-        time_left == time_left + 1
+    time_left = 1.00
+    while time_left > 0.0:
+        dpg.set_value("countdown_progress_bar", time_left)
+        time_left -= 0.01
+        time.sleep(0.1)
+
+
 
 
 
@@ -826,10 +830,10 @@ def make_field_view():
         dpg.delete_item(item="field_resize_handler")
 
     # Make the window
-    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=800) as field_view:
+    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=730) as field_view:
         # Attach field view to the global widgets
         open_widgets["field_view"] = field_view
-        dpg.set_item_pos("field_view", (0,0))
+        dpg.set_item_pos("field_view", (0, 120))
         # Make the menu for the window
         with dpg.menu_bar(label="Field Menu", tag="field_menu"):
             with dpg.menu(label="Field Settings"):
