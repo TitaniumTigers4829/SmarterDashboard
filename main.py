@@ -66,7 +66,7 @@ field_aspect = field_width / field_height
 # Make fonts
 with dpg.font_registry():
     default_font = dpg.add_font(file='GUI\ArialCEMTBlack.ttf', size=16)
-    clock_font = dpg.add_font(file='GUI\ArialCEMTBlack.ttf', size=150)
+    clock_font = dpg.add_font(file='GUI\ArialCEMTBlack.ttf', size=50)
 
 
 # Load textures intro registry
@@ -191,7 +191,7 @@ def on_networktables_change(source, key, value, isNew):
             limelight_odometry["pitch"] = value[2]
         case "ampedTimeLeft":
             dpg.set_value(item="countdown_progress_bar", value=(value/10))
-            dpg.set_value(item="countdown_text", value=(value))
+            dpg.configure_item(item="countdown_text", value=(value))
         case "notePos":
             dpg.configure_item(item="note_in_robot", show=(value != "0"))
             dpg.configure_item(item="note_not_in_robot", show=(value != "0"))
@@ -529,15 +529,13 @@ def make_amp_countdown():
     with dpg.window(label="Countdown", tag="countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1280, height=100) as amp_countdown:
         dpg.set_item_pos(amp_countdown, (0, 0))
         with dpg.group(horizontal=True):
-            dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=1070, height=-1)
-            countdown_text = dpg.add_text(tag="countdown_text", default_value="0.00", color=(255, 255, 255))
-
+            dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=1280, height=-1)
+            dpg.add_text(indent=dpg.get_item_width(amp_countdown)/2 - 60, default_value="0.00", tag="countdown_text", color=(255, 255, 255))
+            dpg.bind_item_font("countdown_text", clock_font)
         def drawlist_resize(sender, appdata):
             width, height = dpg.get_item_rect_size("countdown")
             width -= 2 * 8
             height -= 5 * 8
-            dpg.configure_item("countdown_drawlist", width=width, height=height)
-            dpg.configure_item("amp_countdown_text", size=min(width / 2.3, height / 1.2))
 
             # Drawing space
             drawing_size = min(width, height)
