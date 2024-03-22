@@ -68,7 +68,6 @@ with dpg.font_registry():
     default_font = dpg.add_font(file='GUI\ArialCEMTBlack.ttf', size=16)
     clock_font = dpg.add_font(file='GUI\ArialCEMTBlack.ttf', size=150)
 
-    # dpg.bind_font(default_font)
 
 # Load textures intro registry
 with dpg.texture_registry():
@@ -191,7 +190,8 @@ def on_networktables_change(source, key, value, isNew):
             limelight_odometry["field_y"] = value[1]
             limelight_odometry["pitch"] = value[2]
         case "ampedTimeLeft":
-            dpg.configure_item(item="countdown_progress_bar", value=(value/10))
+            dpg.set_value(item="countdown_progress_bar", value=(value/10))
+            dpg.set_value(item="countdown_text", value=(value))
         case "notePos":
             dpg.configure_item(item="note_in_robot", show=(value != "0"))
             dpg.configure_item(item="note_not_in_robot", show=(value != "0"))
@@ -300,10 +300,10 @@ def make_orientation():
         dpg.delete_item(item="orientation_drawlist")
         dpg.delete_item(item="orientation_resize_handler")
 
-    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=300) as orientation:
+    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=200) as orientation:
         # Attach orientation to the global widgets
         open_widgets["orientation"] = orientation
-        dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+20),0))
+        dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+20),120))
 
         # Make the window menu
         with dpg.menu_bar(label="Orientation Menu", tag="orientation_menu"):
@@ -526,14 +526,14 @@ def make_amp_countdown():
         dpg.delete_item(item="countdown_drawlist")
         dpg.delete_item(item="countdown_resize_handler")
 
-    with dpg.window(label="Countdown", tag="countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=20) as amp_countdown:
+    with dpg.window(label="Countdown", tag="countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1280, height=100) as amp_countdown:
         dpg.set_item_pos(amp_countdown, (0, 0))
-
-        dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=-1, height=-1)
-
+        with dpg.group(horizontal=True):
+            dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=1070, height=-1)
+            countdown_text = dpg.add_text(tag="countdown_text", default_value="0.00", color=(255, 255, 255))
 
         def drawlist_resize(sender, appdata):
-            width, height = dpg.get_item_rect_size("amp_countdown")
+            width, height = dpg.get_item_rect_size("countdown")
             width -= 2 * 8
             height -= 5 * 8
             dpg.configure_item("countdown_drawlist", width=width, height=height)
