@@ -192,15 +192,15 @@ def on_networktables_change(source, key, value, isNew):
             if "isAmped" == True:
                 dpg.configure_item(item="countdown_progress_bar", value=(value =="ampTimeLeft"))
         case "notePos":
-            dpg.configure_item(item="note_in_robot", show=(value == "0"))
+            dpg.configure_item(item="note_in_robot", show=(value != "0"))
             dpg.configure_item(item="note_not_in_robot", show=(value != "0"))
-            dpg.configure_item(item="note_partly_in_robot", show=(value != "0"))
+            dpg.configure_item(item="note_partly_in_robot", show=(value == "0"))
             dpg.configure_item(item="note_in_robot", show=(value != "1"))
             dpg.configure_item(item="note_not_in_robot", show=(value == "1"))
             dpg.configure_item(item="note_partly_in_robot", show=(value != "1"))
-            dpg.configure_item(item="note_in_robot", show=(value != "2"))
+            dpg.configure_item(item="note_in_robot", show=(value == "2"))
             dpg.configure_item(item="note_not_in_robot", show=(value != "2"))
-            dpg.configure_item(item="note_partly_in_robot", show=(value == "2"))
+            dpg.configure_item(item="note_partly_in_robot", show=(value != "2"))
 
 
             
@@ -466,16 +466,8 @@ def make_note_in_robot():
 
         with dpg.drawlist(width=200, height=150, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="note_in_robot", show=False):
-                    dpg.draw_circle(
-                        center=(0,0), 
-                        radius=(dpg.get_item_width(detection)/4), 
-                        color=(5, 255, 5), 
-                        thickness=5, 
-                        fill=(144, 238, 144, 10)
-                        )
 
-                with dpg.draw_node(tag="note_not_in_robot", show=False):
+                with dpg.draw_node(tag="note_not_in_robot", show=True):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=(dpg.get_item_width(detection)/4), 
@@ -491,11 +483,19 @@ def make_note_in_robot():
                         fill=(252, 186, 3, 50),
                         thickness=5, 
                         )
+                with dpg.draw_node(tag="note_in_robot", show=False):
+                    dpg.draw_circle(
+                        center=(0, 0), 
+                        radius=(dpg.get_item_width(detection)/4), 
+                        color=(5, 255, 5), 
+                        thickness=5, 
+                        fill=(144, 238, 144, 50)
+                        )
 
             dpg.set_clip_space("path_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
 
     def drawlist_resize(sender, appdata):
-        width, height = dpg.get_item_rect_size("note_in_robot")
+        width, height = dpg.get_item_rect_size("note_loaded")
         width -= 2 * 8
         height -= 5 * 8
         dpg.configure_item("path_drawlist", width=width, height=height)
