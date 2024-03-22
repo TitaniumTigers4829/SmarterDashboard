@@ -849,8 +849,8 @@ def make_field_view():
             with dpg.menu(label="Field Settings"):
                 dpg.add_checkbox(label="Flip Field", tag="fs_flip_field")
            
-            with dpg.menu(label="Auto Builder"):
-                dpg.add_checkbox(label="Build Auto", tag="build_auto", default_value=False)
+            # with dpg.menu(label="Auto Builder"):
+            #     dpg.add_checkbox(label="Build Auto", tag="build_auto", default_value=False)
 
         # Create items
         with dpg.drawlist(width=100, height=100, tag="field_drawlist"):
@@ -907,7 +907,9 @@ def make_field_view():
             tmp = field_min[0]
             field_min[0] = field_max[0]
             field_max[0] = tmp
-
+            ytmp = field_min[1]
+            field_min[1] = field_max[1]
+            field_max[1] = ytmp
         dpg.configure_item("field_image", pmin=field_min, pmax=field_max)
 
         # Configure the clip space for the robot
@@ -923,10 +925,10 @@ def make_field_view():
 
     # Make all necessary connections for settings to work
     dpg.set_item_callback("fs_flip_field", callback=drawlist_resize)
-    dpg.set_item_callback(
-        "build_auto",
-        callback=lambda x: dpg.configure_item("auto_builder", show=dpg.get_value(x))
-    )
+    # dpg.set_item_callback(
+    #     "build_auto",
+    #     callback=lambda x: dpg.configure_item("auto_builder", show=dpg.get_value(x))
+    # )
 
 
 
