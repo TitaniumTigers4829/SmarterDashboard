@@ -843,7 +843,7 @@ def make_field_view():
         dpg.delete_item(item="field_resize_handler")
 
     # Make the window
-    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=650) as field_view:
+    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=600) as field_view:
         # Attach field view to the global widgets
         open_widgets["field_view"] = field_view
         dpg.set_item_pos("field_view", (0, 120))
