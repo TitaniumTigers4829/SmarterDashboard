@@ -475,7 +475,7 @@ def make_note_in_robot():
                         fill=(186, 0, 0, 50),
                         thickness=5, 
                         )
-                with dpg.draw_node(tag="note_partly_in_robot", show=True):
+                with dpg.draw_node(tag="note_partly_in_robot", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=(dpg.get_item_width(detection)/4), 
