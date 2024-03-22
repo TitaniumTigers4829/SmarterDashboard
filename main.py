@@ -1061,8 +1061,8 @@ def main():
             dpg.add_menu_item(label="Replay", callback=make_replay_view)
             dpg.add_menu_item(label="Orientation", callback=make_orientation)
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
-            dpg.add_menu_item(label="Mode Indicator", callback=make_mode_indicator)
-            dpg.add_menu_item(label="Path Detection", callback=make_note_in_robot)
+            dpg.add_menu_item(label="Screwed", callback=make_mode_indicator)
+            dpg.add_menu_item(label="Note In Robot", callback=make_note_in_robot)
         with dpg.menu(label="Override"):
             dpg.add_button(
                 label="Attempt Reconnect", 
