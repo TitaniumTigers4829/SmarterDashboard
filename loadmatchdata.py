@@ -14,17 +14,17 @@ def load_match_data_from_file():
     dataFrame = dataFrame[1:]
     return(dataFrame)
 
-def get_initial_match_data(dataFrame):  
-    red_or_blue = dataFrame.query("Name == 'NT:/FMSInfo/IsRedAlliance'")["Value"].item()
-    match_number = dataFrame.query("Name == 'NT:/FMSInfo/MatchNumber'")["Value"].item()
-    station_number = dataFrame.query("Name == 'NT:/FMSInfo/StationNumber'")["Value"].item()
-    return(red_or_blue, match_number, station_number)
+# def get_initial_match_data(dataFrame):  
+    # red_or_blue = dataFrame.query("Name == 'NT:/FMSInfo/IsRedAlliance'")["Value"].item()
+    # match_number = dataFrame.query("Name == 'NT:/FMSInfo/MatchNumber'")["Value"].item()
+    # station_number = dataFrame.query("Name == 'NT:/FMSInfo/StationNumber'")["Value"].item()
+    # return(red_or_blue, match_number, station_number)
     
 def get_match_data():
     dataFrame = load_match_data_from_file()
-    initial_data = get_initial_match_data(dataFrame)
+    # initial_data = get_initial_match_data(dataFrame)
     pose_data = get_pose_data(dataFrame)
-    return(initial_data, pose_data)
+    return(pose_data)
 
 def get_pose_data(dataFrame):
     pose_data = dataFrame.query("Name == 'odometry'")
