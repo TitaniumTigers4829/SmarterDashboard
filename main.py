@@ -190,9 +190,8 @@ def on_networktables_change(source, key, value, isNew):
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
             limelight_odometry["pitch"] = value[2]
-        case "isAmped":
-            if "isAmped" == True:
-                dpg.configure_item(item="countdown_progress_bar", value=(value =="ampTimeLeft"))
+        case "ampedTimeLeft":
+            dpg.configure_item(item="countdown_progress_bar", value=(value/10))
         case "notePos":
             dpg.configure_item(item="note_in_robot", show=(value != "0"))
             dpg.configure_item(item="note_not_in_robot", show=(value != "0"))
