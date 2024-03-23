@@ -413,7 +413,7 @@ def make_mode_indicator():
                     dpg.draw_polygon(
                         points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
                         color=(5, 255, 5), 
-                        thickness=5, 
+                        thickness=10, 
                         fill=(5, 94, 5, 50)
                         )
                     
@@ -422,7 +422,7 @@ def make_mode_indicator():
                         points=[[-0.4, -0.4], [-0.4, 0.4], [0.4, 0.4], [0.4, -0.4], [-0.4, -0.4], [-0.4, 0.4]],
                         color=(186, 0, 0),
                         fill=(186, 0, 0, 10),
-                        thickness=5
+                        thickness=10
                         )
 
             dpg.set_clip_space("mode_indicator_pass", 0, 0, 100, 100, -5.0, 5.0)
@@ -473,7 +473,7 @@ def make_note_in_robot():
                         radius=(dpg.get_item_width(detection)/4), 
                         color=(186, 0, 0), 
                         fill=(186, 0, 0, 50),
-                        thickness=5, 
+                        thickness=10,
                         )
                 with dpg.draw_node(tag="note_partly_in_robot", show=False):
                     dpg.draw_circle(
@@ -481,14 +481,14 @@ def make_note_in_robot():
                         radius=(dpg.get_item_width(detection)/4), 
                         color=(252, 186, 3), 
                         fill=(252, 186, 3, 50),
-                        thickness=5, 
+                        thickness=10, 
                         )
                 with dpg.draw_node(tag="note_in_robot", show=False):
                     dpg.draw_circle(
                         center=(0, 0), 
                         radius=(dpg.get_item_width(detection)/4), 
                         color=(5, 255, 5), 
-                        thickness=5, 
+                        thickness=10, 
                         fill=(144, 238, 144, 50)
                         )
 
@@ -523,7 +523,8 @@ def make_amp_countdown():
 
     if open_widgets["countdown"] is not None:
         dpg.delete_item(open_widgets["countdown"])
-        dpg.delete_item(item="countdown_drawlist")
+        dpg.delete_item(item="countdown_progress_bar")
+        dpg.delete_item(item="countdown_text")
         dpg.delete_item(item="countdown_resize_handler")
 
     with dpg.window(label="Countdown", tag="countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1280, height=100) as amp_countdown:
@@ -1062,6 +1063,7 @@ def main():
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
             dpg.add_menu_item(label="Screwed", callback=make_mode_indicator)
             dpg.add_menu_item(label="Note In Robot", callback=make_note_in_robot)
+            dpg.add_menu_item(label="Amp Countdown", callback=make_amp_countdown)
         with dpg.menu(label="Override"):
             dpg.add_button(
                 label="Attempt Reconnect", 
