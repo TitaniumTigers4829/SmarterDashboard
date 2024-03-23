@@ -191,7 +191,7 @@ def on_networktables_change(source, key, value, isNew):
             limelight_odometry["pitch"] = value[2]
         case "ampedTimeLeft":
             dpg.set_value(item="countdown_progress_bar", value=(value/10))
-            dpg.configure_item(item="countdown_text", value=(value))
+            dpg.set_value(item="countdown_text", value=(value))
         case "notePos":
             dpg.configure_item(item="note_in_robot", show=(value != "0"))
             dpg.configure_item(item="note_not_in_robot", show=(value != "0"))
@@ -531,24 +531,16 @@ def make_amp_countdown():
         dpg.set_item_pos(amp_countdown, (0, 0))
         with dpg.group(horizontal=True):
             dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=1280, height=-1)
-            dpg.add_text(indent=dpg.get_item_width(amp_countdown)/2 - 60, default_value="0.00", tag="countdown_text", color=(255, 255, 255))
+            dpg.add_text(indent=dpg.get_item_width(amp_countdown)/2 - 50, default_value="0.00", tag="countdown_text", color=(255, 255, 255))
             dpg.bind_item_font("countdown_text", clock_font)
+
         def drawlist_resize(sender, appdata):
             width, height = dpg.get_item_rect_size("countdown")
             width -= 2 * 8
             height -= 5 * 8
 
             # Drawing space
-            drawing_size = min(width, height)
-            dpg.set_clip_space(
-                item="countdown_pass",
-                top_left_x=((width - drawing_size) // 2),
-                top_left_y=((height - drawing_size) // 2),
-                width=drawing_size,
-                height=drawing_size,
-                min_depth=-5.0,
-                max_depth=5.0
-            )
+   
 
         # Make all necessary connections for proper resizing
         with dpg.item_handler_registry(tag="countdown_resize_handler"):
