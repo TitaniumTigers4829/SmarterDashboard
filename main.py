@@ -472,7 +472,7 @@ def make_note_in_robot():
                         center=(0,0), 
                         radius=(dpg.get_item_width(detection)/4), 
                         color=(186, 0, 0), 
-                        fill=(186, 0, 0, 50),
+                        fill=(186, 0, 0, 100),
                         thickness=10,
                         )
                 with dpg.draw_node(tag="note_partly_in_robot", show=False):
@@ -655,29 +655,6 @@ def draw_path(path_to_place):
             dpg.draw_line(p1=field_to_canvas(second_bezier_points[2][0], second_bezier_points[2][1]), p2=field_to_canvas(second_bezier_points[1][0], second_bezier_points[1][1]), thickness=3, color=(255, 255, 255), label="bezier_stuff")
        
 
-# makes the auto note selector
-def make_auto_note_selector():
-    note_choices = []
-
-
-    if open_widgets["auto_note_selector"] is not None:
-        dpg.delete_item(open_widgets["auto_note_selector"])
-        dpg.delete_item(item="field_drawlist")
-        dpg.delete_item(item="field_resize_handler")
-
-    with dpg.window(label="Auto Note Selector", tag="auto_note_selector", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=800) as auto_note_selector:
-        # Attach field view to the global widgets
-        open_widgets["auto_note_selector"] = auto_note_selector    
-        dpg.set_item_pos("auto_note_selector", (0,0))
-        # Make the menu for the window
-        with dpg.menu_bar(label="Field Menu", tag="auto_note_selector"):
-            with dpg.menu(label="Field Settings"):
-                dpg.add_checkbox(label="Flip Field", tag="fs_flip_field")
-
-        with dpg.drawlist(width=100, height=100, tag="auto_drawlist"):
-            dpg.draw_image(texture_tag="field", tag="field_image", pmin=(0, 0), pmax=(field_width, field_height))
-   
-   
 def load_match_data():
     global  pose_data
     pose_data = get_match_data()
@@ -717,29 +694,27 @@ def make_replay_view():
         
 
     # Make the window
-    with dpg.window(label="Replay View", tag="replay_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=800) as replay_view:
+    with dpg.window(label="Replay View", tag="replay_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1280, height=700) as replay_view:
         # Attach replay view to the global widgets
         open_widgets["replay_view"] = replay_view
-        dpg.set_item_pos("replay_view", (0,0))
+        dpg.set_item_pos("replay_view", (0, 0))
         # Make the menu for the window
         with dpg.menu_bar(label="Replay Menu", tag="replay_menu"):
             with dpg.menu(label="Replay Settings"):
                 dpg.add_checkbox(label="Flip Replay", tag="fs_flip_replay")
-           
-
             with dpg.menu(label="Robot Settings"):
                 dpg.add_checkbox(label="Show Robot", tag="rs_show_robot", default_value=True)
-        input_value = dpg.add_slider_int(width=1065, height=10, max_value=len(pose_data), clamped=True)
+        input_value = dpg.add_slider_int(width=1265, height=10, max_value=len(pose_data), clamped=True)
+
         # Create items
         with dpg.drawlist(width=100, height=100, tag="replay_drawlist"):
             dpg.draw_image(texture_tag="field", tag="replay_image", pmin=(0, 0), pmax=(field_width, field_height))
-
             with dpg.draw_layer(tag="replay_robot_pass", depth_clipping=False, perspective_divide=True):
                 with dpg.draw_node(tag="replay_robot", show=True):
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
                
-            dpg.set_clip_space("replay_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
+            dpg.set_clip_space("replay_robot_pass", 0, 0, 1265, 600, -5.0, 5.0)
 
     # Make all necessary callback functions
     def drawlist_resize(sender, appdata):
@@ -761,10 +736,15 @@ def make_replay_view():
         replay_min = [(width - new_replay_width) // 2, (height - new_replay_height) // 2]
         replay_max = [replay_min[0] + new_replay_width, replay_min[1] + new_replay_height]
 
+
+
         if (dpg.get_value("fs_flip_replay")):
             tmp = replay_min[0]
             replay_min[0] = replay_max[0]
             replay_max[0] = tmp
+            ytmp = replay_min[1]
+            replay_min[1] = replay_max[1]
+            replay_max[1] = ytmp
 
         dpg.configure_item("replay_image", pmin=replay_min, pmax=replay_max)
 
@@ -779,12 +759,10 @@ def make_replay_view():
             max_depth=1.0
         )
 
+
     # Make all necessary connections for settings to work
     dpg.set_item_callback("fs_flip_replay", callback=drawlist_resize)
-    dpg.set_item_callback(
-        "build_auto",
-        callback=lambda x: dpg.configure_item("auto_builder", show=dpg.get_value(x))
-    )
+   
     dpg.set_item_callback(
         "rs_show_robot",
         callback=lambda x: dpg.configure_item("replay_robot", show=dpg.get_value(x))
@@ -918,10 +896,7 @@ def make_field_view():
 
     # Make all necessary connections for settings to work
     dpg.set_item_callback("fs_flip_field", callback=drawlist_resize)
-    # dpg.set_item_callback(
-    #     "build_auto",
-    #     callback=lambda x: dpg.configure_item("auto_builder", show=dpg.get_value(x))
-    # )
+
 
 
 
@@ -983,7 +958,7 @@ def draw_call_update():
        
         #I HATE STRING PARSING
         current_pose_entry = dpg.get_value(input_value)
-        current_pose_x = pose_data.iat[(current_pose_entry -1), 2].strip("Pose2d(Translation2d(X: ").split(";", 1)
+        current_pose_x = pose_data.iat[(current_pose_entry-1), 2].strip("Pose2d(Translation2d(X: ").split(";", 1)
         current_pose_y = current_pose_x[1].strip("Y: ").split(");", 1)
         current_pose_rads = current_pose_y[1].strip("Rotation2d(Rads: ").split(";", 1) # i really hate string parsing this variable serves no purpose
         current_pose_degrees = current_pose_rads[1].strip("Deg: ").split("))", 1)
