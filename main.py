@@ -166,6 +166,7 @@ def on_networktables_change(source, key, value, isNew):
         case "botPose":
             robot_odometry["field_x"] = value[0]
             robot_odometry["field_y"] = value[1]
+            robot_odometry["pitch"] = value[2]
         case "screwed":
             dpg.configure_item(item="can_shoot", show=(value == "true"))
             dpg.configure_item(item="can_shoot", show=(value == "false"))
@@ -185,15 +186,18 @@ def on_networktables_change(source, key, value, isNew):
             dpg.set_value(item="countdown_progress_bar", value=(value/10))
             dpg.set_value(item="countdown_text", value=(value))
         case "notePos":
-            dpg.configure_item(item="note_in_robot", show=(value != "0"))
-            dpg.configure_item(item="note_not_in_robot", show=(value != "0"))
-            dpg.configure_item(item="note_partly_in_robot", show=(value == "0"))
-            dpg.configure_item(item="note_in_robot", show=(value != "1"))
-            dpg.configure_item(item="note_not_in_robot", show=(value == "1"))
-            dpg.configure_item(item="note_partly_in_robot", show=(value != "1"))
-            dpg.configure_item(item="note_in_robot", show=(value == "2"))
-            dpg.configure_item(item="note_not_in_robot", show=(value != "2"))
-            dpg.configure_item(item="note_partly_in_robot", show=(value != "2"))
+            if value=="2":
+                dpg.configure_item(item="note_in_robot", show=True)
+                dpg.configure_item(item="note_not_in_robot", show=False)
+                print("note_in_robot")
+    
+            else:
+                dpg.configure_item(item="note_not_in_robot", show=True)
+                dpg.configure_item(item="note_in_robot", show=False)
+                print("note_not_in_robot")
+
+
+
 
 
             
@@ -459,7 +463,7 @@ def make_note_in_robot():
         with dpg.drawlist(width=200, height=150, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
 
-                with dpg.draw_node(tag="note_not_in_robot", show=True):
+                with dpg.draw_node(tag="note_not_in_robot", show=False):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=(dpg.get_item_width(detection)/4), 
@@ -467,15 +471,8 @@ def make_note_in_robot():
                         fill=(186, 0, 0, 100),
                         thickness=10,
                         )
-                with dpg.draw_node(tag="note_partly_in_robot", show=False):
-                    dpg.draw_circle(
-                        center=(0,0), 
-                        radius=(dpg.get_item_width(detection)/4), 
-                        color=(252, 186, 3), 
-                        fill=(252, 186, 3, 50),
-                        thickness=10, 
-                        )
-                with dpg.draw_node(tag="note_in_robot", show=False):
+ 
+                with dpg.draw_node(tag="note_in_robot"):
                     dpg.draw_circle(
                         center=(0, 0), 
                         radius=(dpg.get_item_width(detection)/4), 
@@ -545,7 +542,7 @@ def make_amp_countdown():
 # creates the path based on the robot pose and the stuff to fix it
 def create_path(path_to_place):
 
-    robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], 0, robot_odometry["yaw"]]
+    robot_pos = [robot_odometry["field_x"], robot_odometry["field_y"], robot_odometry["pitch"]]
     # print(robot_pos)
 
     if path_to_place[0] >= 10:
@@ -919,7 +916,7 @@ def draw_call_update():
     # Field View
     if open_widgets["field_view"] is not None:
         field_scale = dpg.create_scale_matrix([1, field_aspect])
-        field_rotation = dpg.create_rotation_matrix(np.pi/2 - pitch, [0, 0, -1])
+        field_rotation = dpg.create_rotation_matrix((pitch*np.pi/180), [0, 0, -1])
         field_position = dpg.create_translation_matrix([x, y])
         dpg.apply_transform("field_robot", field_scale*field_position*field_rotation)
 
