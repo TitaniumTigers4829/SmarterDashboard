@@ -78,19 +78,19 @@ with dpg.texture_registry():
 
 
 def field_to_canvas(x, y):
-    field_meters_width = 16.54175
-    field_meters_height = 8.0137 
+    field_meters_width = 16.59
+    field_meters_height = 8.26 
     normalized_x = (x / field_meters_width) - 0.5
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_x, normalized_y
 
 def field_x_to_canvas_x(x):
-    field_meters_width = 16.54175
+    field_meters_width = 16.59
     normalized_x = (x / field_meters_width) - 0.5
     return normalized_x
 
 def field_y_to_canvas_y(y):
-    field_meters_height = 8.0137 
+    field_meters_height = 8.26 
     normalized_y = (y / (field_aspect * field_meters_height)) - (1 / (2 * field_aspect))
     return normalized_y
 
@@ -177,12 +177,13 @@ def on_networktables_change(source, key, value, isNew):
             limelight_odometry["field_x"] = value[0]
             limelight_odometry["field_y"] = value[1]
             limelight_odometry["pitch"] = value[2]
-        case "screwed":
+        case "canShoot":
             dpg.configure_item(item="can_shoot", show=(value == "true"))
             dpg.configure_item(item="can_not_shoot", show=(value != "true"))
-
+        case "autoChooser":
+            dpg.configure_item("auto_selector", items=value)
         case "ampedTimeLeft":
-            dpg.set_value(item="countdown_progress_bar", value=(value/10))
+            dpg.set_value(item="countdown_progress_bar", value=(value/150))
             dpg.set_value(item="countdown_text", value=(value))
         case "notePos":
             dpg.configure_item(item="note_in_robot", show=(value==2))
@@ -391,7 +392,7 @@ def make_mode_indicator():
         dpg.delete_item(item="indicator_drawlist")
         dpg.delete_item(item="indicator_resize_handler")
 
-    with dpg.window(label="Screwed", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=150) as indicator:
+    with dpg.window(label="Within Range", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=150) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
         dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+230)))
@@ -500,7 +501,7 @@ def make_note_in_robot():
     dpg.bind_item_handler_registry("note_loaded", "note_in_robot_resize_handler")
 
 # Makes the countdown
-def make_amp_countdown():
+def make_round_countdown():
     global open_widgets, robot_odometry
 
     if open_widgets["countdown"] is not None:
@@ -820,36 +821,37 @@ def make_field_view():
             with dpg.menu(label="Field Settings"):
                 dpg.add_checkbox(label="Flip Field", tag="fs_flip_field")
                 dpg.add_checkbox(label="Show Robot", tag="show_robot", default_value=True)
-                dpg.add_checkbox(label="Show Limelight", tag="show_limelight", default_value=False)
+                dpg.add_checkbox(label="Show Limelight", tag="show_limelight", default_value=True)
+                # dpg.add_checkbox(label="Show Notes", tag="show_notes", default_value=False)
 
         # Create items
         with dpg.drawlist(width=100, height=100, tag="field_drawlist"):
             dpg.draw_image(texture_tag="field", tag="field_image", pmin=(0, 0), pmax=(field_width, field_height))
-
+  
             with dpg.draw_layer(tag="field_robot_pass", depth_clipping=False, perspective_divide=True):
-                with dpg.draw_node(tag="field_robot", show=True):
-                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
-                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
-                with dpg.draw_node(tag="limelight_robot", show=False): 
+                with dpg.draw_node(tag="notes", show=False):
+                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(4)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="blue_note_1")
+                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(6.85)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="blue_note_2")
+                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(9.7)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="blue_note_3")
+                    
+                    dpg.draw_circle((field_x_to_canvas_x(13.68), field_y_to_canvas_y(4)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="red_note_1")
+                    dpg.draw_circle((field_x_to_canvas_x(13.68), field_y_to_canvas_y(6.85)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="red_note_2")
+                    dpg.draw_circle((field_x_to_canvas_x(13.68), field_y_to_canvas_y(9.7)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="red_note_3")
+
+                    dpg.draw_circle((field_x_to_canvas_x(8.30), field_y_to_canvas_y(10.55)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="note_4")
+                    dpg.draw_circle((field_x_to_canvas_x(8.30), field_y_to_canvas_y(7.3)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="note_5")
+                    dpg.draw_circle((field_x_to_canvas_x(8.30), field_y_to_canvas_y(4)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="note_6")
+                    dpg.draw_circle((field_x_to_canvas_x(8.30), field_y_to_canvas_y(0.74)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="note_7")
+                    dpg.draw_circle((field_x_to_canvas_x(8.30), field_y_to_canvas_y(-2.55)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 0), tag="note_8")
+
+                with dpg.draw_node(tag="limelight_robot", show=True): 
                     dpg.draw_polygon(limelight_vertices, thickness=3, color=(50, 205, 50), fill=(50, 205, 50, 10))
                     dpg.draw_polygon(limelight_arrow_vertices, thickness=3, color=(50, 205, 50), fill=(50, 205, 50))
                
-                with dpg.draw_node(tag="auto_builder", show=False):
-                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(4)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="blue_note_1")
-                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(6.85)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="blue_note_2")
-                    dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(9.7)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="blue_note_3")
-                    
-                    dpg.draw_circle((field_x_to_canvas_x(13.66), field_y_to_canvas_y(4)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="red_note_1")
-                    dpg.draw_circle((field_x_to_canvas_x(13.66), field_y_to_canvas_y(6.85)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="red_note_2")
-                    dpg.draw_circle((field_x_to_canvas_x(13.66), field_y_to_canvas_y(9.7)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="red_note_3")
-
-                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(10.55)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="note_4")
-                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(7.3)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="note_5")
-                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(4)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="note_6")
-                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(0.74)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="note_7")
-                    dpg.draw_circle((field_x_to_canvas_x(8.28), field_y_to_canvas_y(-2.55)), radius=11, thickness=3, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="note_8")
-
-   
+                with dpg.draw_node(tag="field_robot", show=True):
+                    dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
+                    dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
+              
             dpg.set_clip_space("field_robot_pass", 0, 0, 100, 100, -5.0, 5.0)
 
     # Make all necessary callback functions
@@ -902,6 +904,10 @@ def make_field_view():
         "show_limelight",
         callback=lambda x: dpg.configure_item("limelight_robot", show=dpg.get_value(x))
         )
+    # dpg.set_item_callback(
+    #     "show_notes",
+    #     callback=lambda x: dpg.configure_item("notes", show=dpg.get_value(x))
+    #     )
 
 
 
@@ -1033,7 +1039,7 @@ def main():
             dpg.add_menu_item(label="Auto Selector", callback=make_auto_selector)
             dpg.add_menu_item(label="Screwed", callback=make_mode_indicator)
             dpg.add_menu_item(label="Note In Robot", callback=make_note_in_robot)
-            dpg.add_menu_item(label="Amp Countdown", callback=make_amp_countdown)
+            dpg.add_menu_item(label="Amp Countdown", callback=make_round_countdown)
         with dpg.menu(label="Override"):
             dpg.add_button(
                 label="Attempt Reconnect", 
@@ -1055,7 +1061,7 @@ def main():
     # Make all the windows to start with
     make_auto_selector()
     make_field_view()
-    make_amp_countdown()
+    make_round_countdown()
     make_mode_indicator()
     make_note_in_robot()
     make_orientation()
