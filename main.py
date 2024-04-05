@@ -830,7 +830,7 @@ def make_field_view():
                 with dpg.draw_node(tag="field_robot", show=True):
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
-                with dpg.draw_node(tag="limelight_robot", show=True): 
+                with dpg.draw_node(tag="limelight_robot", show=False): 
                     dpg.draw_polygon(limelight_vertices, thickness=3, color=(50, 205, 50), fill=(50, 205, 50, 10))
                     dpg.draw_polygon(limelight_arrow_vertices, thickness=3, color=(50, 205, 50), fill=(50, 205, 50))
                
