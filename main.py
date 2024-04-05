@@ -36,13 +36,19 @@ lower_red_waypoint = [12.5, -1, 0, 0]
 
 # Global robot data
 robot_odometry = {
-    "field_x": 0,
-    "field_y": 0,
+    "field_x": 8.25,
+    "field_y": 4,
     "pitch": 0, # 2d rotation
     "roll": 0,
     "yaw": 0,
 }
-
+limelight_odometry = {
+    "field_x": 8.25,
+    "field_y": 4,
+    "pitch": 0, # 2d rotation
+    "roll": 0,
+    "yaw": 0,
+}
 
 # coordinates for field places
 red_amp_cords = [13.75, 10, True, 90]
@@ -166,35 +172,22 @@ def on_networktables_change(source, key, value, isNew):
         case "botPose":
             robot_odometry["field_x"] = value[0]
             robot_odometry["field_y"] = value[1]
-            robot_odometry["pitch"] = value[2]
+            robot_odometry["pitch"] = value[2]        
+        case "limelightPose":
+            limelight_odometry["field_x"] = value[0]
+            limelight_odometry["field_y"] = value[1]
+            limelight_odometry["pitch"] = value[2]
         case "screwed":
             dpg.configure_item(item="can_shoot", show=(value == "true"))
-            dpg.configure_item(item="can_shoot", show=(value == "false"))
             dpg.configure_item(item="can_not_shoot", show=(value != "true"))
-            dpg.configure_item(item="can_not_shoot", show=(value != "false"))
-        # case "pathData[0]":
-        #     dpg.configure_item(item="path_detected", show=(value == "true"))
-        #     dpg.configure_item(item="path_detected", show=(value == "false"))
-        # case "pathData[1]":
-        #     dpg.configure_item(item="red_or_blue", show=(value == "red"))
-        #     dpg.configure_item(item="red_or_blue", show=(value == "blue"))
-        # case "pathData[2]":
-        #     dpg.configure_item(item="speaker_or_amp", show=(value == "speaker"))
-        #     dpg.configure_item(item="speaker_or_amp", show=(value == "amp"))
 
         case "ampedTimeLeft":
             dpg.set_value(item="countdown_progress_bar", value=(value/10))
             dpg.set_value(item="countdown_text", value=(value))
         case "notePos":
-            if value=="2":
-                dpg.configure_item(item="note_in_robot", show=True)
-                dpg.configure_item(item="note_not_in_robot", show=False)
-                print("note_in_robot")
-    
-            else:
-                dpg.configure_item(item="note_not_in_robot", show=True)
-                dpg.configure_item(item="note_in_robot", show=False)
-                print("note_not_in_robot")
+            dpg.configure_item(item="note_in_robot", show=(value==2))
+            dpg.configure_item(item="note_not_in_robot", show=(value!=2))
+           
 
 
 
@@ -463,7 +456,7 @@ def make_note_in_robot():
         with dpg.drawlist(width=200, height=150, tag="path_drawlist"):
             with dpg.draw_layer(tag="path_indicator_pass", depth_clipping=False, perspective_divide=True):
 
-                with dpg.draw_node(tag="note_not_in_robot", show=False):
+                with dpg.draw_node(tag="note_not_in_robot", show=True):
                     dpg.draw_circle(
                         center=(0,0), 
                         radius=(dpg.get_item_width(detection)/4), 
@@ -472,7 +465,7 @@ def make_note_in_robot():
                         thickness=10,
                         )
  
-                with dpg.draw_node(tag="note_in_robot"):
+                with dpg.draw_node(tag="note_in_robot", show=False):
                     dpg.draw_circle(
                         center=(0, 0), 
                         radius=(dpg.get_item_width(detection)/4), 
@@ -772,7 +765,9 @@ def make_replay_view():
 # Makes the field layout window
 def make_field_view():
     robot_width = 0.027
-    robot_height = 0.027
+    robot_height = 0.027    
+    limelight_width = 0.027
+    limelight_height = 0.027
 
     robot_vertices = [
         # Box
@@ -791,7 +786,23 @@ def make_field_view():
         [robot_width * 0.35, robot_height * 0.25],
         [0,  robot_height * 0.25],
     ]
-
+    limelight_vertices = [
+        # Box
+        [-limelight_width, -limelight_height],
+        [ limelight_width, -limelight_height],
+        [ limelight_width,  limelight_height],
+        [-limelight_width,  limelight_height],
+        [-limelight_width, -limelight_height],
+    ]
+    limelight_arrow_vertices = [
+        # Arrow
+        [0, -limelight_height * 0.8],
+        [0,  limelight_height * 0.25],
+        [-limelight_width * 0.35, limelight_height * 0.25],
+        [0,  limelight_height * 0.8],
+        [limelight_width * 0.35, limelight_height * 0.25],
+        [0,  limelight_height * 0.25],
+    ]
     global open_widgets
 
     if open_widgets["field_view"] is not None:
@@ -808,7 +819,8 @@ def make_field_view():
         with dpg.menu_bar(label="Field Menu", tag="field_menu"):
             with dpg.menu(label="Field Settings"):
                 dpg.add_checkbox(label="Flip Field", tag="fs_flip_field")
-           
+                dpg.add_checkbox(label="Show Robot", tag="show_robot", default_value=True)
+                dpg.add_checkbox(label="Show Limelight", tag="show_limelight", default_value=False)
 
         # Create items
         with dpg.drawlist(width=100, height=100, tag="field_drawlist"):
@@ -818,6 +830,9 @@ def make_field_view():
                 with dpg.draw_node(tag="field_robot", show=True):
                     dpg.draw_polygon(robot_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5, 10))
                     dpg.draw_polygon(arrow_vertices, thickness=3, color=(255, 94, 5), fill=(255, 94, 5))
+                with dpg.draw_node(tag="limelight_robot", show=True): 
+                    dpg.draw_polygon(limelight_vertices, thickness=3, color=(50, 205, 50), fill=(50, 205, 50, 10))
+                    dpg.draw_polygon(limelight_arrow_vertices, thickness=3, color=(50, 205, 50), fill=(50, 205, 50))
                
                 with dpg.draw_node(tag="auto_builder", show=False):
                     dpg.draw_circle((field_x_to_canvas_x(2.89), field_y_to_canvas_y(4)), radius=11, thickness=2.5, color=(255, 255, 255), fill=(255, 255, 255, 50), tag="blue_note_1")
@@ -879,7 +894,14 @@ def make_field_view():
 
     # Make all necessary connections for settings to work
     dpg.set_item_callback("fs_flip_field", callback=drawlist_resize)
-
+    dpg.set_item_callback(
+        "show_robot",
+        callback=lambda x: dpg.configure_item("field_robot", show=dpg.get_value(x))
+        )
+    dpg.set_item_callback(
+        "show_limelight",
+        callback=lambda x: dpg.configure_item("limelight_robot", show=dpg.get_value(x))
+        )
 
 
 
@@ -891,13 +913,14 @@ def make_field_view():
 
 # Update for whenever the frame is drawn
 def draw_call_update():
-    global robot_odometry
+    global robot_odometry, limelight_odometry
     pitch = robot_odometry["pitch"] * np.pi / 180
     roll = robot_odometry["roll"] * np.pi / 180
     yaw = robot_odometry["yaw"] * np.pi / 180
-
+    limelight_pitch = robot_odometry["pitch"] * np.pi / 180
     x, y = field_to_canvas(robot_odometry["field_x"], robot_odometry["field_y"])
- 
+    limelight_x, limelight_y = field_to_canvas(limelight_odometry["field_x"], limelight_odometry["field_y"])
+
 
     # Orientation
     if open_widgets["orientation"] is not None:
@@ -906,7 +929,7 @@ def draw_call_update():
         orientation_3d = dpg.create_rotation_matrix(-np.pi / 4, [0, 0, 1])
 
         # Always make sure Y is first otherwise there's gonna be some serious problems
-        robot_rotation = dpg.create_rotation_matrix(np.pi / 2 - pitch, [0, 0, 1]) * \
+        robot_rotation = dpg.create_rotation_matrix(180 / np.pi - pitch, [0, 0, 1]) * \
                             dpg.create_rotation_matrix(yaw, [0, 1, 0]) * \
                             dpg.create_rotation_matrix(roll, [1, 0, 0])
         dpg.apply_transform("robot_3d", proj*view*orientation_3d*robot_rotation)
@@ -916,9 +939,13 @@ def draw_call_update():
     # Field View
     if open_widgets["field_view"] is not None:
         field_scale = dpg.create_scale_matrix([1, field_aspect])
-        field_rotation = dpg.create_rotation_matrix((pitch*np.pi/180), [0, 0, -1])
+        field_rotation = dpg.create_rotation_matrix(((180/np.pi * -pitch)+0.5*np.pi), [0, 0, -1])
         field_position = dpg.create_translation_matrix([x, y])
         dpg.apply_transform("field_robot", field_scale*field_position*field_rotation)
+
+        limelight_rotation = dpg.create_rotation_matrix(((180/np.pi * -limelight_pitch)+0.5*np.pi), [0, 0, -1])
+        limelight_position = dpg.create_translation_matrix([limelight_x, limelight_y])
+        dpg.apply_transform("limelight_robot", field_scale*limelight_position*limelight_rotation)
 
         if("path_detected" == "true"):
             if ("red_or_blue" == "red") & ("speaker_or_amp" == "speaker"):
