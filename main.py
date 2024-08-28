@@ -66,8 +66,8 @@ field_aspect = field_width / field_height
 
 # Make fonts
 with dpg.font_registry():
-    default_font = dpg.add_font(file='GUI\ArialCEMTBlack.ttf', size=16)
-    clock_font = dpg.add_font(file='GUI\ArialCEMTBlack.ttf', size=50)
+    default_font = dpg.add_font(file='GUI/ArialCEMTBlack.ttf', size=16)
+    clock_font = dpg.add_font(file='GUI/ArialCEMTBlack.ttf', size=50)
 
 
 # Load textures intro registry
@@ -242,13 +242,13 @@ def make_auto_selector():
     if open_widgets["auto_selector"] is not None:
         dpg.delete_item(open_widgets["auto_selector"])
 
-    with dpg.window(label="Auto Path Selector", no_collapse=True, no_scrollbar=True, width=200, height=100) as auto_selector:
+    with dpg.window(label="Auto Path Selector", no_collapse=True, no_scrollbar=True, width=(round(0.015*dpg.get_viewport_width())), height=(round(dpg.get_viewport_height()/4))) as auto_selector:
         # Attach auto selector to global widgets
 
         open_widgets["auto_selector"] = auto_selector
         dpg.add_combo(tag="auto_selector", items=chooser_options, width=-10)
 
-        dpg.set_item_pos(auto_selector, (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector)+20),dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+380)))
+        dpg.set_item_pos(auto_selector, (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector)), (dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+280))))
 
         # Add items
 
@@ -290,10 +290,10 @@ def make_orientation():
         dpg.delete_item(item="orientation_drawlist")
         dpg.delete_item(item="orientation_resize_handler")
 
-    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=200) as orientation:
+    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(0.15 * dpg.get_viewport_width()), height=round(0.25 * dpg.get_viewport_height())) as orientation:
         # Attach orientation to the global widgets
         open_widgets["orientation"] = orientation
-        dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+20),120))
+        dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+40), (round(dpg.get_viewport_height()/8))))
 
         # Make the window menu
         with dpg.menu_bar(label="Orientation Menu", tag="orientation_menu"):
@@ -510,7 +510,7 @@ def make_round_countdown():
         dpg.delete_item(item="countdown_text")
         dpg.delete_item(item="countdown_resize_handler")
 
-    with dpg.window(label="Countdown", tag="countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1280, height=100) as amp_countdown:
+    with dpg.window(label="Countdown", tag="countdown", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_width()), height=round(dpg.get_viewport_client_height()/8)) as amp_countdown:
         dpg.set_item_pos(amp_countdown, (0, 0))
         with dpg.group(horizontal=True):
             dpg.add_progress_bar(tag="countdown_progress_bar", label="Countdown", default_value=0.0, width=1280, height=-1)
@@ -812,10 +812,10 @@ def make_field_view():
         dpg.delete_item(item="field_resize_handler")
 
     # Make the window
-    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=1080, height=600) as field_view:
+    with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(0.8 * dpg.get_viewport_width()), height=round(0.8 * dpg.get_viewport_height())) as field_view:
         # Attach field view to the global widgets
         open_widgets["field_view"] = field_view
-        dpg.set_item_pos("field_view", (0, 120))
+        dpg.set_item_pos("field_view", ((0), (dpg.get_viewport_height()- round(7 * dpg.get_viewport_height()/8))))
         # Make the menu for the window
         with dpg.menu_bar(label="Field Menu", tag="field_menu"):
             with dpg.menu(label="Field Settings"):
