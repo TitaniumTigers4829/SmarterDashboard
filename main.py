@@ -242,13 +242,13 @@ def make_auto_selector():
     if open_widgets["auto_selector"] is not None:
         dpg.delete_item(open_widgets["auto_selector"])
 
-    with dpg.window(label="Auto Path Selector", no_collapse=True, no_scrollbar=True, width=(round(0.015*dpg.get_viewport_width())), height=(round(dpg.get_viewport_height()/4))) as auto_selector:
+    with dpg.window(label="Auto Path Selector", no_collapse=True, no_scrollbar=True, width=round(dpg.get_viewport_width()/6.5), height=round(dpg.get_viewport_height()/8)) as auto_selector:
         # Attach auto selector to global widgets
 
         open_widgets["auto_selector"] = auto_selector
         dpg.add_combo(tag="auto_selector", items=chooser_options, width=-10)
 
-        dpg.set_item_pos(auto_selector, (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector)), (dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+280))))
+        dpg.set_item_pos(auto_selector, (dpg.get_viewport_width()-(dpg.get_item_width(auto_selector) + 20), (dpg.get_viewport_height()-(dpg.get_item_height(auto_selector)+380))))
 
         # Add items
 
@@ -290,10 +290,10 @@ def make_orientation():
         dpg.delete_item(item="orientation_drawlist")
         dpg.delete_item(item="orientation_resize_handler")
 
-    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(0.15 * dpg.get_viewport_width()), height=round(0.25 * dpg.get_viewport_height())) as orientation:
+    with dpg.window(label="Robot Orientation", tag="orientation", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_width()/6.5), height=round(dpg.get_viewport_height()/4)) as orientation:
         # Attach orientation to the global widgets
         open_widgets["orientation"] = orientation
-        dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+40), (round(dpg.get_viewport_height()/8))))
+        dpg.set_item_pos("orientation", (dpg.get_viewport_width()-(dpg.get_item_width(orientation)+20), (round(dpg.get_viewport_height()/8)+ 20)))
 
         # Make the window menu
         with dpg.menu_bar(label="Orientation Menu", tag="orientation_menu"):
@@ -392,7 +392,7 @@ def make_mode_indicator():
         dpg.delete_item(item="indicator_drawlist")
         dpg.delete_item(item="indicator_resize_handler")
 
-    with dpg.window(label="Within Range", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_height()/6.5), height=round(dpg.get_viewport_width()/5.3)) as indicator:
+    with dpg.window(label="Within Range", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_width()/6.5), height=round(dpg.get_viewport_height()/5.3)) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
         dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+230)))
@@ -449,7 +449,7 @@ def make_note_in_robot():
         dpg.delete_item(item="path_drawlist")
         dpg.delete_item(item="path_resize_handler")
 
-    with dpg.window(label="Note in Robot", tag="note_loaded", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_height()/6.5), height=round(dpg.get_viewport_width()/5.3)) as detection:
+    with dpg.window(label="Note in Robot", tag="note_loaded", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_width()/6.5), height=round(dpg.get_viewport_height()/5.3)) as detection:
         # Attach orientation to the global widgets
         open_widgets["note_loaded"] = detection
         dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+80)))
@@ -815,7 +815,7 @@ def make_field_view():
     with dpg.window(label="Field View", tag="field_view", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(0.8 * dpg.get_viewport_width()), height=round(0.8 * dpg.get_viewport_height())) as field_view:
         # Attach field view to the global widgets
         open_widgets["field_view"] = field_view
-        dpg.set_item_pos("field_view", ((0), (dpg.get_viewport_height()- round(7 * dpg.get_viewport_height()/8))))
+        dpg.set_item_pos("field_view", ((0), (dpg.get_viewport_height()- round(7 * dpg.get_viewport_height()/8)+20)))
         # Make the menu for the window
         with dpg.menu_bar(label="Field Menu", tag="field_menu"):
             with dpg.menu(label="Field Settings"):
