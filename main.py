@@ -392,7 +392,7 @@ def make_mode_indicator():
         dpg.delete_item(item="indicator_drawlist")
         dpg.delete_item(item="indicator_resize_handler")
 
-    with dpg.window(label="Within Range", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=150) as indicator:
+    with dpg.window(label="Within Range", tag="mode_indicator", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_height()/6.5), height=round(dpg.get_viewport_width()/5.3)) as indicator:
         # Attach orientation to the global widgets
         open_widgets["mode_indicator"] = indicator
         dpg.set_item_pos(indicator, (dpg.get_viewport_width()-(dpg.get_item_width(indicator)+20),dpg.get_viewport_height()-(dpg.get_item_height(indicator)+230)))
@@ -449,7 +449,7 @@ def make_note_in_robot():
         dpg.delete_item(item="path_drawlist")
         dpg.delete_item(item="path_resize_handler")
 
-    with dpg.window(label="Note in Robot", tag="note_loaded", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=200, height=150) as detection:
+    with dpg.window(label="Note in Robot", tag="note_loaded", no_collapse=True, no_scrollbar=True, no_title_bar=False, width=round(dpg.get_viewport_height()/6.5), height=round(dpg.get_viewport_width()/5.3)) as detection:
         # Attach orientation to the global widgets
         open_widgets["note_loaded"] = detection
         dpg.set_item_pos(detection, (dpg.get_viewport_width()-(dpg.get_item_width(detection)+20),dpg.get_viewport_height()-(dpg.get_item_height(detection)+80)))
